@@ -214,7 +214,7 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center space-x-2">
                     <Avatar className="w-8 h-8">
-                      <AvatarImage src={user.avatarUrl} />
+                      <AvatarImage src={user.profileImageUrl} />
                       <AvatarFallback>{getUserInitials()}</AvatarFallback>
                     </Avatar>
                     <span className="hidden md:block font-medium">

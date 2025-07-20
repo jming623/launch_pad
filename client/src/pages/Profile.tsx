@@ -25,7 +25,7 @@ export default function Profile() {
   useEffect(() => {
     if (user) {
       setNickname(user.nickname || "");
-      setAvatarPreview(user.avatarUrl || "");
+      setAvatarPreview(user.profileImageUrl || "");
     }
   }, [user]);
 

@@ -117,3 +117,13 @@ Preferred communication style: Simple, everyday language.
 - Session storage externalized to PostgreSQL
 - Static asset optimization through Vite build process
 - API rate limiting and error handling middleware
+
+## Recent Changes
+
+### 2025-01-20: 프로필 관리 시스템 완성
+- **닉네임 우선 표시**: 헤더에서 닉네임이 이메일보다 우선 표시되도록 수정
+- **프로필 수정 페이지**: `/profile` 경로에 프로필 수정 페이지 추가
+- **프로필 사진 업로드**: multer를 사용한 파일 업로드 기능 (5MB 제한)
+- **프로필 메뉴**: 헤더 드롭다운에 "프로필 수정" 메뉴 추가
+- **실시간 닉네임 검증**: 프로필 수정 시에도 비속어 및 중복 검사 적용
+- **파일 관리**: 이전 프로필 사진 자동 삭제 기능

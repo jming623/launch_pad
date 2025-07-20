@@ -581,8 +581,8 @@ export function registerRoutes(app: Express): Server {
         
         // Delete old avatar file if exists
         const currentUser = await storage.getUser(userId);
-        if (currentUser?.avatarUrl && currentUser.avatarUrl.startsWith('/uploads/')) {
-          const oldFilePath = path.join(process.cwd(), currentUser.avatarUrl);
+        if (currentUser?.profileImageUrl && currentUser.profileImageUrl.startsWith('/uploads/')) {
+          const oldFilePath = path.join(process.cwd(), currentUser.profileImageUrl);
           if (fs.existsSync(oldFilePath)) {
             fs.unlinkSync(oldFilePath);
           }
@@ -591,9 +591,9 @@ export function registerRoutes(app: Express): Server {
 
       const updateData: any = {};
       if (nickname) updateData.nickname = nickname;
-      if (avatarUrl) updateData.avatarUrl = avatarUrl;
+      if (avatarUrl) updateData.profileImageUrl = avatarUrl;
 
-      const updatedUser = await storage.updateUser(userId, updateData);
+      const updatedUser = await storage.updateUserProfile(userId, updateData);
 
       if (!updatedUser) {
         return res.status(404).json({ message: "사용자를 찾을 수 없습니다" });
