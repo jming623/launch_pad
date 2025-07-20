@@ -1,12 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
+import { getQueryFn } from "../lib/queryClient";
 
 export function useAuth() {
-  // Temporarily disable auth to stop infinite loop
-  // TODO: Fix Replit auth configuration
+  const { data: user, isLoading, error } = useQuery({
+    queryKey: ["/api/user"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
   return {
-    user: null,
-    isLoading: false,
-    isAuthenticated: false,
-    error: null,
+    user,
+    isLoading,
+    isAuthenticated: !!user,
+    error,
   };
 }

@@ -24,13 +24,16 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table for Replit Auth
+// User storage table
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
+  email: varchar("email").unique().notNull(),
+  password: varchar("password"), // For traditional email/password auth
+  firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  provider: varchar("provider").default("local"), // 'local', 'google', 'github', 'replit'
+  providerId: varchar("provider_id"), // External provider ID
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -157,7 +160,10 @@ export const feedbackRelations = relations(feedback, ({ one }) => ({
 }));
 
 // Insert schemas
-export const insertUserSchema = createInsertSchema(users);
+export const insertUserSchema = createInsertSchema(users).omit({
+  createdAt: true,
+  updatedAt: true,
+});
 export const insertCategorySchema = createInsertSchema(categories).omit({
   id: true,
   createdAt: true,
@@ -186,6 +192,7 @@ export const insertFeedbackSchema = createInsertSchema(feedback).omit({
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Project = typeof projects.$inferSelect;

@@ -1,25 +1,15 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./auth";
 import { insertProjectSchema, insertCommentSchema, insertFeedbackSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
-  await setupAuth(app);
+  setupAuth(app);
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = (req.user as any).claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
+  // Current user route is now handled in auth.ts
 
   // Categories
   app.get('/api/categories', async (req, res) => {
@@ -42,7 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timeframe = 'all' 
       } = req.query;
       
-      const userId = (req.user as any)?.claims?.sub;
+      const userId = req.user?.id;
       
       const options = {
         categoryId: categoryId ? parseInt(categoryId as string) : undefined,
@@ -63,7 +53,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/projects/:id', async (req, res) => {
     try {
       const projectId = parseInt(req.params.id);
-      const userId = (req.user as any)?.claims?.sub;
+      const userId = req.user?.id;
       
       const project = await storage.getProject(projectId, userId);
       if (!project) {
@@ -82,7 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/projects', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const projectData = insertProjectSchema.parse({
         ...req.body,
         authorId: userId,
@@ -102,7 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/projects/:id', isAuthenticated, async (req: any, res) => {
     try {
       const projectId = parseInt(req.params.id);
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       
       // Check if user owns the project
       const existingProject = await storage.getProject(projectId);
@@ -130,7 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/projects/:id', isAuthenticated, async (req: any, res) => {
     try {
       const projectId = parseInt(req.params.id);
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       
       // Check if user owns the project
       const existingProject = await storage.getProject(projectId);
@@ -154,7 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/projects/:id/like', isAuthenticated, async (req: any, res) => {
     try {
       const projectId = parseInt(req.params.id);
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       
       const result = await storage.toggleLike(projectId, userId);
       res.json(result);
@@ -179,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/projects/:id/comments', isAuthenticated, async (req: any, res) => {
     try {
       const projectId = parseInt(req.params.id);
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       
       const commentData = insertCommentSchema.parse({
         ...req.body,
@@ -201,7 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/comments/:id', isAuthenticated, async (req: any, res) => {
     try {
       const commentId = parseInt(req.params.id);
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { content } = req.body;
       
       // TODO: Check if user owns the comment
@@ -220,7 +210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/comments/:id', isAuthenticated, async (req: any, res) => {
     try {
       const commentId = parseInt(req.params.id);
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       
       // TODO: Check if user owns the comment
       const success = await storage.deleteComment(commentId);
@@ -248,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/feedback', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       
       const feedbackData = insertFeedbackSchema.parse({
         ...req.body,

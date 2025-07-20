@@ -11,17 +11,19 @@ import Home from "@/pages/Home";
 import ProjectDetail from "@/pages/ProjectDetail";
 import ProjectCreate from "@/pages/ProjectCreate";
 import Feedback from "@/pages/Feedback";
+import AuthPage from "@/pages/AuthPage";
 
 function Router() {
   const { isAuthenticated, isLoading, error } = useAuth();
 
-  // If authentication check fails (401), assume not authenticated
-  const actuallyLoading = isLoading && !error;
+  // For 401 errors, consider not authenticated instead of loading
+  const actuallyLoading = isLoading && !error?.message?.includes('401');
 
   return (
     <Switch>
       {/* Public routes - available to all users */}
       <Route path="/projects/:id" component={ProjectDetail} />
+      <Route path="/auth" component={AuthPage} />
       
       {/* Root route - shows Landing for non-authenticated, Home for authenticated */}
       <Route path="/">

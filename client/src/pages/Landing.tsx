@@ -58,8 +58,11 @@ export default function Landing() {
               혁신적인 아이디어와 창작물을 더 많은 사람들과 공유하고, 새로운 기회를 발견하세요
             </p>
             <div className="flex justify-center space-x-4">
-              <Button asChild size="lg">
-                <a href="/api/login">지금 시작하기</a>
+              <Button 
+                size="lg"
+                onClick={() => setLocation('/auth')}
+              >
+                지금 시작하기
               </Button>
               <Button variant="outline" size="lg" asChild>
                 <Link href="#projects">프로젝트 둘러보기</Link>
@@ -172,7 +175,12 @@ export default function Landing() {
                       첫 번째 프로젝트를 등록해보세요!
                     </p>
                     <Button asChild>
-                      <a href="/api/login">로그인하고 프로젝트 등록하기</a>
+                      <span 
+                        className="cursor-pointer"
+                        onClick={() => setLocation('/auth')}
+                      >
+                        로그인하고 프로젝트 등록하기
+                      </span>
                     </Button>
                   </CardContent>
                 </Card>
