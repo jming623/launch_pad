@@ -100,11 +100,26 @@ export default function ProjectCreate() {
   });
 
   const onSubmit = (data: ProjectFormData) => {
+    console.log('Form data submitted:', data);
+    console.log('Form errors:', form.formState.errors);
+    
+    // Ensure categoryId is valid
+    if (!data.categoryId || data.categoryId === 0) {
+      toast({
+        title: "카테고리 선택 필요",
+        description: "프로젝트 카테고리를 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Convert categoryId to number if it's a string
     const processedData = {
       ...data,
       categoryId: typeof data.categoryId === 'string' ? parseInt(data.categoryId) : data.categoryId,
     };
+    
+    console.log('Processed data:', processedData);
     createProjectMutation.mutate(processedData);
   };
 
@@ -220,7 +235,11 @@ export default function ProjectCreate() {
               <div className="space-y-2">
                 <Label htmlFor="category">카테고리 *</Label>
                 <Select
-                  onValueChange={(value) => form.setValue('categoryId', parseInt(value))}
+                  onValueChange={(value) => {
+                    const categoryId = parseInt(value);
+                    form.setValue('categoryId', categoryId);
+                    form.clearErrors('categoryId');
+                  }}
                   disabled={categoriesLoading}
                 >
                   <SelectTrigger>
@@ -355,19 +374,12 @@ export default function ProjectCreate() {
               {/* Contact Info */}
               <div className="space-y-2">
                 <Label htmlFor="contactInfo">연락처</Label>
-                <div className="flex space-x-2">
-                  <div className="flex-1">
-                    <Input
-                      id="contactInfo"
-                      type="email"
-                      placeholder="your.email@example.com"
-                      {...form.register('contactInfo')}
-                    />
-                  </div>
-                  <Button type="button" variant="outline" size="icon">
-                    <Mail className="w-4 h-4" />
-                  </Button>
-                </div>
+                <Input
+                  id="contactInfo"
+                  type="email"
+                  placeholder="your.email@example.com"
+                  {...form.register('contactInfo')}
+                />
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   협업이나 문의를 받을 이메일 주소
                 </p>
