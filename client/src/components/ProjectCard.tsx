@@ -118,6 +118,11 @@ export function ProjectCard({ project, rank }: ProjectCardProps) {
                   src={project.imageUrl}
                   alt={project.title}
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    target.style.display = 'none';
+                    console.log('Image failed to load in card:', project.imageUrl);
+                  }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">

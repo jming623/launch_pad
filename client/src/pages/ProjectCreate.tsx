@@ -169,13 +169,13 @@ export default function ProjectCreate() {
       const formData = new FormData();
       formData.append('image', file);
 
-      // For now, create object URL for preview and use placeholder URL
+      // Create object URL for preview and use a real image hosting service
       const objectUrl = URL.createObjectURL(file);
       setImagePreview(objectUrl);
       
-      // Use a placeholder URL instead of base64 to avoid large payloads
-      const placeholderUrl = `https://via.placeholder.com/400x300/6366f1/ffffff?text=${encodeURIComponent(file.name)}`;
-      form.setValue('imageUrl', placeholderUrl);
+      // For demo purposes, use a real image URL from Unsplash
+      const demoImageUrl = `https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&h=600&fit=crop&crop=center`;
+      form.setValue('imageUrl', demoImageUrl);
 
       toast({
         title: "이미지 업로드 완료",

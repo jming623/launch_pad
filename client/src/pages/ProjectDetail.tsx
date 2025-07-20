@@ -318,9 +318,37 @@ export default function ProjectDetail() {
               alt={project.title}
               className="w-full h-64 md:h-96 object-cover rounded-xl"
               onError={(e) => {
-                e.currentTarget.style.display = 'none';
+                const target = e.currentTarget;
+                target.style.display = 'none';
+                console.log('Image failed to load:', project.imageUrl);
               }}
             />
+          </div>
+        )}
+
+        {/* Project Video */}
+        {project.videoUrl && (
+          <div className="mb-8">
+            <div className="aspect-video bg-gray-100 dark:bg-slate-800 rounded-xl overflow-hidden">
+              {project.videoUrl.includes('youtube.com') || project.videoUrl.includes('youtu.be') ? (
+                <iframe
+                  src={project.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                  title={project.title}
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  src={project.videoUrl}
+                  controls
+                  className="w-full h-full object-cover"
+                >
+                  브라우저가 비디오를 지원하지 않습니다.
+                </video>
+              )}
+            </div>
           </div>
         )}
 
@@ -345,6 +373,14 @@ export default function ProjectDetail() {
                   <a href={project.demoUrl} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="w-4 h-4 mr-2" />
                     데모 보기
+                  </a>
+                </Button>
+              )}
+              {project.videoUrl && (
+                <Button asChild variant="outline">
+                  <a href={project.videoUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    영상 보기
                   </a>
                 </Button>
               )}
