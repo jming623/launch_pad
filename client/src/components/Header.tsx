@@ -52,13 +52,16 @@ export function Header() {
 
   const getUserDisplayName = () => {
     if (!user) return '사용자';
-    return user.firstName || user.email?.split('@')[0] || '사용자';
+    // 한국 문화권: 성(lastName) + 이름(firstName) 순서로 표시
+    const fullName = `${user.lastName || ''}${user.firstName ? (user.lastName ? ' ' : '') + user.firstName : ''}`.trim();
+    return fullName || user.email?.split('@')[0] || '사용자';
   };
 
   const getUserInitials = () => {
     if (!user) return 'U';
-    const name = user.firstName || user.email?.split('@')[0] || 'User';
-    return name.charAt(0).toUpperCase();
+    // 성(lastName)의 첫 글자를 아바타에 표시 (한국 문화권)
+    const familyName = user.lastName || user.firstName || user.email?.split('@')[0] || 'User';
+    return familyName.charAt(0).toUpperCase();
   };
 
   const logoutMutation = useMutation({
