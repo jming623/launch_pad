@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { isUnauthorizedError } from '@/lib/authUtils';
 import { apiRequest } from '@/lib/queryClient';
 import { insertFeedbackSchema, type FeedbackWithAuthor } from '@shared/schema';
-import { MessageSquare, Bug, Lightbulb, HelpCircle, Send, Heart, Star, Sparkles } from 'lucide-react';
+import { MessageSquare, Bug, Lightbulb, HelpCircle, Send, Heart, Star, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const feedbackFormSchema = z.object({
   content: z.string().min(10, '피드백 내용을 최소 10자 이상 작성해주세요'),
@@ -53,6 +53,8 @@ export default function Feedback() {
   const queryClient = useQueryClient();
   const recentFeedbackRef = useRef<HTMLDivElement>(null);
   const [highlightedFeedbackId, setHighlightedFeedbackId] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const form = useForm<FeedbackFormData>({
     resolver: zodResolver(feedbackFormSchema),
@@ -63,6 +65,19 @@ export default function Feedback() {
   });
 
   const watchedCategory = form.watch('category');
+
+  // Pagination logic
+  const paginatedFeedbacks = useMemo(() => {
+    if (!feedbacks) return [];
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return feedbacks.slice(startIndex, endIndex);
+  }, [feedbacks, currentPage, itemsPerPage]);
+
+  const totalPages = useMemo(() => {
+    if (!feedbacks) return 0;
+    return Math.ceil(feedbacks.length / itemsPerPage);
+  }, [feedbacks, itemsPerPage]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -107,6 +122,8 @@ export default function Feedback() {
             behavior: 'smooth', 
             block: 'start' 
           });
+          // 첫 페이지로 이동하여 새 피드백을 보여줌
+          setCurrentPage(1);
           setHighlightedFeedbackId(newFeedback.id);
           
           // 3초 후 강조 효과 제거
@@ -458,8 +475,9 @@ export default function Feedback() {
                 ))}
               </div>
             ) : feedbacks && feedbacks.length > 0 ? (
-              <div className="space-y-6">
-                {feedbacks.slice(0, 10).map((feedback: FeedbackWithAuthor) => {
+              <>
+                <div className="space-y-6">
+                  {paginatedFeedbacks.map((feedback: FeedbackWithAuthor) => {
                   const Icon = categoryIcons[feedback.category as keyof typeof categoryIcons];
                   const isHighlighted = highlightedFeedbackId === feedback.id;
                   return (
@@ -467,13 +485,13 @@ export default function Feedback() {
                       key={feedback.id} 
                       className={`flex space-x-4 p-4 rounded-xl transition-all duration-1000 ${
                         isHighlighted 
-                          ? 'bg-gradient-to-r from-yellow-100 to-yellow-50 dark:from-yellow-900/30 dark:to-yellow-800/20 ring-2 ring-yellow-400 dark:ring-yellow-600 shadow-lg transform scale-105' 
+                          ? 'bg-gradient-to-r from-emerald-100 to-emerald-50 dark:from-emerald-900/30 dark:to-emerald-800/20 ring-2 ring-emerald-400 dark:ring-emerald-600 shadow-lg transform scale-105' 
                           : 'hover:bg-gray-50 dark:hover:bg-slate-800/50'
                       }`}
                     >
-                      <Avatar className={`w-12 h-12 ${isHighlighted ? 'ring-2 ring-yellow-400' : ''}`}>
+                      <Avatar className={`w-12 h-12 ${isHighlighted ? 'ring-2 ring-emerald-400' : ''}`}>
                         <AvatarImage src={feedback.author.profileImageUrl} />
-                        <AvatarFallback className={isHighlighted ? 'bg-yellow-200 text-yellow-800' : ''}>
+                        <AvatarFallback className={isHighlighted ? 'bg-emerald-200 text-emerald-800' : ''}>
                           {getAuthorInitials(feedback.author)}
                         </AvatarFallback>
                       </Avatar>
@@ -500,7 +518,62 @@ export default function Feedback() {
                   );
                 })}
               </div>
-            ) : (
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center space-x-2 mt-8">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="flex items-center space-x-1"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span>이전</span>
+                  </Button>
+                  
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                      if (
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      ) {
+                        return (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(page)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {page}
+                          </Button>
+                        );
+                      } else if (
+                        page === currentPage - 2 ||
+                        page === currentPage + 2
+                      ) {
+                        return <span key={page} className="text-gray-400">...</span>;
+                      }
+                      return null;
+                    })}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center space-x-1"
+                  >
+                    <span>다음</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            </>) : (
               <div className="text-center py-16">
                 <MessageSquare className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
                 <h3 className="text-xl font-medium text-gray-500 dark:text-gray-400 mb-2">
