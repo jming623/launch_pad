@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
-import { Github, Mail } from 'lucide-react';
+import { Github, Mail, ArrowLeft, Home } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('유효한 이메일을 입력해주세요'),
@@ -140,6 +140,19 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex">
+      {/* Home Button */}
+      <div className="absolute top-6 left-6 z-10">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setLocation('/')}
+          className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>홈으로 돌아가기</span>
+        </Button>
+      </div>
+
       {/* Left side - Form */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
