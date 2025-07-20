@@ -85,22 +85,20 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Registration endpoint
+  // Registration endpoint (email + password only)
   app.post("/api/register", async (req, res, next) => {
     try {
       const registerSchema = z.object({
-        email: z.string().email(),
-        password: z.string().min(6),
-        firstName: z.string().min(1),
-        lastName: z.string().optional(),
+        email: z.string().email("올바른 이메일 주소를 입력해주세요"),
+        password: z.string().min(6, "비밀번호는 최소 6자리 이상이어야 합니다"),
       });
 
-      const { email, password, firstName, lastName } = registerSchema.parse(req.body);
+      const { email, password } = registerSchema.parse(req.body);
 
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
-        return res.status(400).json({ message: "Email already registered" });
+        return res.status(400).json({ message: "이미 등록된 이메일입니다" });
       }
 
       // Create user
@@ -109,8 +107,8 @@ export function setupAuth(app: Express) {
         id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         email,
         password: hashedPassword,
-        firstName,
-        lastName,
+        provider: "local",
+        hasSetNickname: false,
       });
 
       // Login the user
@@ -119,17 +117,20 @@ export function setupAuth(app: Express) {
         res.status(201).json({
           id: user.id,
           email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
+          nickname: user.nickname,
           profileImageUrl: user.profileImageUrl,
+          hasSetNickname: user.hasSetNickname,
         });
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+        return res.status(400).json({ 
+          message: "입력 정보가 올바르지 않습니다",
+          errors: error.errors 
+        });
       }
       console.error("Registration error:", error);
-      res.status(500).json({ message: "Registration failed" });
+      res.status(500).json({ message: "회원가입 중 오류가 발생했습니다" });
     }
   });
 
@@ -145,9 +146,9 @@ export function setupAuth(app: Express) {
         res.status(200).json({
           id: user.id,
           email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
+          nickname: user.nickname,
           profileImageUrl: user.profileImageUrl,
+          hasSetNickname: user.hasSetNickname,
         });
       });
     })(req, res, next);
@@ -183,9 +184,9 @@ export function setupAuth(app: Express) {
     res.json({
       id: user.id,
       email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      nickname: user.nickname,
       profileImageUrl: user.profileImageUrl,
+      hasSetNickname: user.hasSetNickname,
     });
   });
 }

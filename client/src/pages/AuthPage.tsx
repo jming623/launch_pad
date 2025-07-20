@@ -24,8 +24,6 @@ const loginSchema = z.object({
 const registerSchema = z.object({
   email: z.string().email('유효한 이메일을 입력해주세요'),
   password: z.string().min(6, '비밀번호는 최소 6자 이상이어야 합니다'),
-  firstName: z.string().min(1, '이름을 입력해주세요'),
-  lastName: z.string().optional(),
 });
 
 type LoginData = z.infer<typeof loginSchema>;
@@ -57,8 +55,6 @@ export default function AuthPage() {
     defaultValues: {
       email: '',
       password: '',
-      firstName: '',
-      lastName: '',
     },
   });
 
@@ -81,7 +77,7 @@ export default function AuthPage() {
       queryClient.setQueryData(['/api/user'], user);
       toast({
         title: '로그인 성공',
-        description: `환영합니다, ${user.firstName}님!`,
+        description: user.nickname ? `환영합니다, ${user.nickname}님!` : '환영합니다!',
       });
       setLocation('/');
     },
@@ -113,9 +109,12 @@ export default function AuthPage() {
       queryClient.setQueryData(['/api/user'], user);
       toast({
         title: '회원가입 성공',
-        description: `환영합니다, ${user.firstName}님!`,
+        description: '가입이 완료되었습니다! 닉네임을 설정해주세요.',
+        action: {
+          label: '닉네임 설정',
+          onClick: () => setLocation('/nickname'),
+        },
       });
-      setLocation('/');
     },
     onError: (error: Error) => {
       toast({
@@ -274,34 +273,6 @@ export default function AuthPage() {
                 <CardContent className="space-y-4">
                   <Form {...registerForm}>
                     <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={registerForm.control}
-                          name="firstName"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>이름</FormLabel>
-                              <FormControl>
-                                <Input placeholder="이름" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={registerForm.control}
-                          name="lastName"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>성</FormLabel>
-                              <FormControl>
-                                <Input placeholder="성 (선택사항)" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
                       <FormField
                         control={registerForm.control}
                         name="email"

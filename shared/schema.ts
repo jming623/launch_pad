@@ -8,6 +8,7 @@ import {
   serial,
   integer,
   boolean,
+  unique,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -29,11 +30,11 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
   email: varchar("email").unique().notNull(),
   password: varchar("password"), // For traditional email/password auth
-  firstName: varchar("first_name").notNull(),
-  lastName: varchar("last_name"),
+  nickname: varchar("nickname").unique(), // User's display name
   profileImageUrl: varchar("profile_image_url"),
   provider: varchar("provider").default("local"), // 'local', 'google', 'github', 'replit'
   providerId: varchar("provider_id"), // External provider ID
+  hasSetNickname: boolean("has_set_nickname").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -172,6 +173,15 @@ export const feedbackRelations = relations(feedback, ({ one }) => ({
   }),
 }));
 
+// Profanity filter table
+export const profanityWords = pgTable("profanity_words", {
+  id: serial("id").primaryKey(),
+  word: varchar("word").notNull().unique(),
+  severity: integer("severity").default(1), // 1=mild, 2=moderate, 3=severe
+  category: varchar("category").default("general"), // general, sexual, violence, etc.
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
@@ -229,3 +239,21 @@ export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 
 export type SiteVisit = typeof siteVisits.$inferSelect;
 export type InsertSiteVisit = typeof siteVisits.$inferInsert;
+
+export type ProfanityWord = typeof profanityWords.$inferSelect;
+export type InsertProfanityWord = typeof profanityWords.$inferInsert;
+
+// Nickname validation schema
+export const nicknameSchema = z.object({
+  nickname: z.string()
+    .min(2, "닉네임은 최소 2글자 이상이어야 합니다")
+    .max(20, "닉네임은 최대 20글자까지 가능합니다")
+    .regex(/^[가-힣a-zA-Z0-9_]+$/, "닉네임은 한글, 영문, 숫자, 언더스코어만 사용 가능합니다")
+    .refine((val) => !val.includes(" "), "닉네임에 공백은 사용할 수 없습니다"),
+});
+
+// Profile update schema
+export const profileUpdateSchema = z.object({
+  nickname: nicknameSchema.shape.nickname,
+  profileImageUrl: z.string().url().optional().or(z.literal("")),
+});

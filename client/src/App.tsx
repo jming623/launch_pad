@@ -15,6 +15,7 @@ import ProjectEdit from "@/pages/ProjectEdit";
 import Feedback from "@/pages/Feedback";
 import AuthPage from "@/pages/AuthPage";
 import Search from "@/pages/Search";
+import NicknameSetup from "@/pages/NicknameSetup";
 
 function Router() {
   const { isAuthenticated, isLoading, error } = useAuth();
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/login" component={AuthPage} />
       <Route path="/register" component={AuthPage} />
+      <Route path="/nickname" component={NicknameSetup} />
       
       {/* Root route - shows Landing for non-authenticated, Home for authenticated */}
       <Route path="/">

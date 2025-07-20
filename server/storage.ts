@@ -6,6 +6,7 @@ import {
   comments,
   feedback,
   siteVisits,
+  profanityWords,
   type User,
   type UpsertUser,
   type Project,
@@ -21,6 +22,8 @@ import {
   type InsertFeedback,
   type SiteVisit,
   type InsertSiteVisit,
+  type ProfanityWord,
+  type InsertProfanityWord,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, sql, and, isNull, or, ilike } from "drizzle-orm";
@@ -29,8 +32,10 @@ export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByNickname(nickname: string): Promise<User | undefined>;
   createUser(user: UpsertUser): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUserProfile(id: string, data: { nickname?: string; profileImageUrl?: string }): Promise<User | undefined>;
   
   // Category operations
   getCategories(): Promise<Category[]>;
@@ -78,6 +83,11 @@ export interface IStorage {
   // Get categories with project counts
   getCategoriesWithCounts(): Promise<(Category & { projectCount: number })[]>;
   
+  // Profanity operations
+  getProfanityWords(): Promise<ProfanityWord[]>;
+  addProfanityWord(word: InsertProfanityWord): Promise<ProfanityWord>;
+  isProfane(text: string): Promise<boolean>;
+  
   // Stats
   getStats(): Promise<{
     totalProjects: number;
@@ -99,6 +109,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByNickname(nickname: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.nickname, nickname));
+    return user;
+  }
+
   async createUser(userData: UpsertUser): Promise<User> {
     const [user] = await db.insert(users).values(userData).returning();
     return user;
@@ -115,6 +130,19 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date(),
         },
       })
+      .returning();
+    return user;
+  }
+
+  async updateUserProfile(id: string, data: { nickname?: string; profileImageUrl?: string }): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ 
+        ...data, 
+        hasSetNickname: data.nickname ? true : undefined,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, id))
       .returning();
     return user;
   }
@@ -579,6 +607,26 @@ export class DatabaseStorage implements IStorage {
       todayVisits,
       totalLikes: projectStats.totalLikes || 0,
     };
+  }
+
+  // Profanity operations
+  async getProfanityWords(): Promise<ProfanityWord[]> {
+    return await db.select().from(profanityWords).orderBy(asc(profanityWords.word));
+  }
+
+  async addProfanityWord(word: InsertProfanityWord): Promise<ProfanityWord> {
+    const [newWord] = await db.insert(profanityWords).values(word).returning();
+    return newWord;
+  }
+
+  async isProfane(text: string): Promise<boolean> {
+    const words = await this.getProfanityWords();
+    const lowerText = text.toLowerCase();
+    
+    return words.some(word => {
+      const lowerWord = word.word.toLowerCase();
+      return lowerText.includes(lowerWord);
+    });
   }
 }
 

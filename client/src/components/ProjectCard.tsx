@@ -105,17 +105,13 @@ export function ProjectCard({ project, rank }: ProjectCardProps) {
   };
 
   const getAuthorInitials = (author: any) => {
-    if (author.lastName) return author.lastName.charAt(0).toUpperCase();
-    if (author.firstName) return author.firstName.charAt(0).toUpperCase();
+    if (author.nickname) return author.nickname.charAt(0).toUpperCase();
     if (author.email) return author.email.charAt(0).toUpperCase();
     return 'U';
   };
 
   const getAuthorName = (author: any) => {
-    if (author.lastName && author.firstName) {
-      return `${author.lastName}${author.firstName}`;
-    }
-    if (author.firstName) return author.firstName;
+    if (author.nickname) return author.nickname;
     if (author.email) return author.email.split('@')[0];
     return '사용자';
   };

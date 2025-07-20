@@ -381,6 +381,170 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Profanity words API
+  app.get('/api/profanity', async (req, res) => {
+    try {
+      const words = await storage.getProfanityWords();
+      res.json(words.map(w => w.word)); // Only return the words, not the full object
+    } catch (error) {
+      console.error("Error fetching profanity words:", error);
+      res.status(500).json({ message: "Failed to fetch profanity words" });
+    }
+  });
+
+  app.post('/api/profanity/init', async (req, res) => {
+    try {
+      const defaultProfanityWords = [
+        // 일반적인 욕설
+        { word: "바보", severity: 1, category: "mild" },
+        { word: "멍청이", severity: 1, category: "mild" },
+        { word: "병신", severity: 2, category: "offensive" },
+        { word: "또라이", severity: 2, category: "offensive" },
+        { word: "미친", severity: 2, category: "offensive" },
+        { word: "씨발", severity: 3, category: "severe" },
+        { word: "개새끼", severity: 3, category: "severe" },
+        { word: "좆", severity: 3, category: "sexual" },
+        { word: "섹스", severity: 2, category: "sexual" },
+        { word: "sex", severity: 2, category: "sexual" },
+        { word: "fuck", severity: 3, category: "severe" },
+        { word: "shit", severity: 2, category: "offensive" },
+        { word: "bitch", severity: 3, category: "severe" },
+        // 관리자/시스템 관련
+        { word: "admin", severity: 1, category: "system" },
+        { word: "administrator", severity: 1, category: "system" },
+        { word: "관리자", severity: 1, category: "system" },
+        { word: "운영자", severity: 1, category: "system" },
+        { word: "null", severity: 1, category: "system" },
+        { word: "undefined", severity: 1, category: "system" },
+      ];
+
+      const createdWords = [];
+      for (const word of defaultProfanityWords) {
+        try {
+          const newWord = await storage.addProfanityWord(word);
+          createdWords.push(newWord);
+        } catch (error) {
+          console.log(`Word "${word.word}" might already exist`);
+        }
+      }
+
+      res.json({ 
+        message: "Profanity words initialized", 
+        created: createdWords.length,
+        words: createdWords 
+      });
+    } catch (error) {
+      console.error("Error initializing profanity words:", error);
+      res.status(500).json({ message: "Failed to initialize profanity words" });
+    }
+  });
+
+  // Nickname validation API
+  app.post('/api/user/validate-nickname', async (req, res) => {
+    try {
+      const { nickname } = req.body;
+      
+      if (!nickname || typeof nickname !== 'string') {
+        return res.status(400).json({ message: "닉네임이 필요합니다" });
+      }
+
+      // Check basic validation
+      if (nickname.length < 2) {
+        return res.status(400).json({ message: "닉네임은 최소 2글자 이상이어야 합니다" });
+      }
+      
+      if (nickname.length > 20) {
+        return res.status(400).json({ message: "닉네임은 최대 20글자까지 가능합니다" });
+      }
+      
+      if (!/^[가-힣a-zA-Z0-9_]+$/.test(nickname)) {
+        return res.status(400).json({ message: "닉네임은 한글, 영문, 숫자, 언더스코어만 사용 가능합니다" });
+      }
+
+      // Check profanity
+      const isProfane = await storage.isProfane(nickname);
+      if (isProfane) {
+        return res.status(400).json({ message: "부적절한 내용이 포함된 닉네임입니다" });
+      }
+
+      // Check if nickname already exists
+      const existingUser = await storage.getUserByNickname(nickname);
+      if (existingUser) {
+        return res.status(400).json({ message: "이미 사용 중인 닉네임입니다" });
+      }
+
+      res.json({ valid: true, message: "사용 가능한 닉네임입니다" });
+    } catch (error) {
+      console.error("Error validating nickname:", error);
+      res.status(500).json({ message: "닉네임 검증 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Update user profile API
+  app.put('/api/user/profile', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "인증이 필요합니다" });
+      }
+
+      const { nickname, profileImageUrl } = req.body;
+      
+      // Validate nickname if provided
+      if (nickname) {
+        const validation = await validateNickname(nickname, userId);
+        if (!validation.valid) {
+          return res.status(400).json({ message: validation.message });
+        }
+      }
+
+      const updatedUser = await storage.updateUserProfile(userId, {
+        nickname,
+        profileImageUrl: profileImageUrl || undefined,
+      });
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "사용자를 찾을 수 없습니다" });
+      }
+
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ message: "프로필 업데이트 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Helper function for nickname validation
+  async function validateNickname(nickname: string, currentUserId?: string): Promise<{ valid: boolean; message: string }> {
+    if (!nickname || typeof nickname !== 'string') {
+      return { valid: false, message: "닉네임이 필요합니다" };
+    }
+
+    if (nickname.length < 2) {
+      return { valid: false, message: "닉네임은 최소 2글자 이상이어야 합니다" };
+    }
+    
+    if (nickname.length > 20) {
+      return { valid: false, message: "닉네임은 최대 20글자까지 가능합니다" };
+    }
+    
+    if (!/^[가-힣a-zA-Z0-9_]+$/.test(nickname)) {
+      return { valid: false, message: "닉네임은 한글, 영문, 숫자, 언더스코어만 사용 가능합니다" };
+    }
+
+    const isProfane = await storage.isProfane(nickname);
+    if (isProfane) {
+      return { valid: false, message: "부적절한 내용이 포함된 닉네임입니다" };
+    }
+
+    const existingUser = await storage.getUserByNickname(nickname);
+    if (existingUser && existingUser.id !== currentUserId) {
+      return { valid: false, message: "이미 사용 중인 닉네임입니다" };
+    }
+
+    return { valid: true, message: "사용 가능한 닉네임입니다" };
+  }
+
   const httpServer = createServer(app);
   return httpServer;
 }
