@@ -97,6 +97,7 @@ export default function ProjectDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects', id, 'comments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', id] });
       setCommentContent('');
       setReplyingTo(null);
       toast({
