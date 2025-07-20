@@ -195,8 +195,8 @@ export default function ProjectDetail() {
   };
 
   const getAuthorName = (author: any) => {
-    if (author.firstName && author.lastName) {
-      return `${author.firstName} ${author.lastName}`;
+    if (author.lastName && author.firstName) {
+      return `${author.lastName}${author.firstName}`;
     }
     if (author.firstName) return author.firstName;
     if (author.email) return author.email.split('@')[0];
@@ -204,6 +204,7 @@ export default function ProjectDetail() {
   };
 
   const getAuthorInitials = (author: any) => {
+    if (author.lastName) return author.lastName.charAt(0).toUpperCase();
     if (author.firstName) return author.firstName.charAt(0).toUpperCase();
     if (author.email) return author.email.charAt(0).toUpperCase();
     return 'U';
@@ -316,6 +317,9 @@ export default function ProjectDetail() {
               src={project.imageUrl}
               alt={project.title}
               className="w-full h-64 md:h-96 object-cover rounded-xl"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
             />
           </div>
         )}
