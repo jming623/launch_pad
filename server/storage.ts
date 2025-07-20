@@ -309,7 +309,7 @@ export class DatabaseStorage implements IStorage {
       .from(comments)
       .leftJoin(users, eq(comments.authorId, users.id))
       .where(and(eq(comments.projectId, projectId), eq(comments.isActive, true)))
-      .orderBy(asc(comments.createdAt));
+      .orderBy(desc(comments.createdAt));
 
     // Group comments by parent
     const commentsMap = new Map<number, CommentWithAuthor>();

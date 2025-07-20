@@ -543,7 +543,14 @@ export default function ProjectDetail() {
                         <div className="flex items-center space-x-2 mb-1">
                           <span className="font-medium text-sm">{getAuthorName(comment.author)}</span>
                           <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {new Date(comment.createdAt).toLocaleDateString('ko-KR')}
+                            {new Date(comment.createdAt).toLocaleString('ko-KR', {
+                              year: 'numeric',
+                              month: '2-digit', 
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit'
+                            })}
                           </span>
                         </div>
                         <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
@@ -574,7 +581,14 @@ export default function ProjectDetail() {
                               <div className="flex items-center space-x-2 mb-1">
                                 <span className="font-medium text-sm">{getAuthorName(reply.author)}</span>
                                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                                  {new Date(reply.createdAt).toLocaleDateString('ko-KR')}
+                                  {new Date(reply.createdAt).toLocaleString('ko-KR', {
+                                    year: 'numeric',
+                                    month: '2-digit', 
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit'
+                                  })}
                                 </span>
                               </div>
                               <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
