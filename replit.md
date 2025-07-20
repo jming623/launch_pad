@@ -53,11 +53,13 @@ Preferred communication style: Simple, everyday language.
 ## Data Flow
 
 ### Authentication Flow
-1. Traditional email/password registration and login with secure bcrypt hashing
-2. Multi-provider OAuth support (Google, GitHub, Replit) for social authentication
-3. Session management using PostgreSQL session store with connect-pg-simple
-4. Protected routes with passport.js authentication middleware
-5. Automatic login after successful registration
+1. **Nickname-based Registration**: Email/password registration with nickname setup flow
+2. Secure bcrypt password hashing and session management
+3. Profanity filtering system with Korean language support (19 filtered words)
+4. Two-step registration: account creation → nickname setup via `/nickname` page
+5. Multi-provider OAuth support (Google, GitHub, Replit) for social authentication
+6. Session management using PostgreSQL session store with connect-pg-simple
+7. Protected routes with passport.js authentication middleware
 
 ### Project Discovery Flow
 1. Projects displayed with ranking system (Today/Weekly/Monthly/All Time)
