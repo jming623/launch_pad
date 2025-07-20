@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Header } from '@/components/Header';
@@ -12,6 +12,7 @@ import { useState } from 'react';
 import type { ProjectWithDetails } from '@shared/schema';
 
 export default function Landing() {
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<'today' | 'weekly' | 'monthly' | 'all'>('today');
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>();
 
