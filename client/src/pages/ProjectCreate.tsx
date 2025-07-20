@@ -20,7 +20,16 @@ import { insertProjectSchema } from '@shared/schema';
 import { useEffect } from 'react';
 import { Upload, ImageIcon, Link, Mail } from 'lucide-react';
 
-const projectFormSchema = insertProjectSchema.extend({
+const projectFormSchema = insertProjectSchema.omit({ 
+  authorId: true,
+  id: true,
+  viewCount: true,
+  likeCount: true,
+  commentCount: true,
+  isActive: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
   categoryId: z.number().min(1, '카테고리를 선택해주세요'),
 });
 
@@ -414,6 +423,30 @@ export default function ProjectCreate() {
                       onSubmit(formData);
                     } else {
                       console.log('Form validation failed:', form.formState.errors);
+                      
+                      // Scroll to first error field and highlight it
+                      const firstErrorField = Object.keys(form.formState.errors)[0];
+                      if (firstErrorField) {
+                        const element = document.getElementById(firstErrorField);
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          element.style.borderColor = '#ef4444';
+                          element.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
+                          
+                          // Reset styling after 3 seconds
+                          setTimeout(() => {
+                            element.style.borderColor = '';
+                            element.style.boxShadow = '';
+                          }, 3000);
+                        }
+                      }
+                      
+                      // Show error toast
+                      toast({
+                        title: "입력 오류",
+                        description: "필수 항목을 모두 입력해주세요.",
+                        variant: "destructive",
+                      });
                     }
                   }}
                 >
