@@ -408,7 +408,7 @@ export default function ProjectEdit() {
                     <img
                       src={imagePreview}
                       alt="Preview"
-                      className="w-full max-w-md h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                      className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
                     />
                   </div>
                 )}

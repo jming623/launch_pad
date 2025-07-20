@@ -342,7 +342,7 @@ export default function ProjectCreate() {
                     <img
                       src={imagePreview}
                       alt="미리보기"
-                      className="w-full max-w-md h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                      className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
                       onError={() => setImagePreview(null)}
                     />
                   </div>
