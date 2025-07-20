@@ -53,7 +53,7 @@ export function Header() {
   const getUserDisplayName = () => {
     if (!user) return '사용자';
     // 한국 문화권: 성(lastName) + 이름(firstName) 순서로 표시
-    const fullName = `${user.lastName || ''}${user.firstName ? (user.lastName ? ' ' : '') + user.firstName : ''}`.trim();
+    const fullName = `${user.firstName ? (user.lastName ? ' ' : '') + user.firstName : ''}`.trim();
     return fullName || user.email?.split('@')[0] || '사용자';
   };
 

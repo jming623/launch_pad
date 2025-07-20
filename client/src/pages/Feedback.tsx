@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,13 +12,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { isUnauthorizedError } from '@/lib/authUtils';
 import { apiRequest } from '@/lib/queryClient';
 import { insertFeedbackSchema, type FeedbackWithAuthor } from '@shared/schema';
-import { useEffect } from 'react';
-import { MessageSquare, Bug, Lightbulb, HelpCircle, Send } from 'lucide-react';
+import { MessageSquare, Bug, Lightbulb, HelpCircle, Send, Heart, Star, Sparkles } from 'lucide-react';
 
 const feedbackFormSchema = insertFeedbackSchema.extend({
   category: z.enum(['bug', 'feature', 'other'], {
@@ -41,15 +41,17 @@ const categoryLabels = {
 };
 
 const categoryColors = {
-  bug: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200',
-  feature: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200',
-  other: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200',
+  bug: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800',
+  feature: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800',
+  other: 'bg-gray-100 dark:bg-gray-800/30 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700',
 };
 
 export default function Feedback() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const recentFeedbackRef = useRef<HTMLDivElement>(null);
+  const [highlightedFeedbackId, setHighlightedFeedbackId] = useState<number | null>(null);
 
   const form = useForm<FeedbackFormData>({
     resolver: zodResolver(feedbackFormSchema),
@@ -84,13 +86,32 @@ export default function Feedback() {
       const response = await apiRequest('POST', '/api/feedback', data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (newFeedback) => {
       queryClient.invalidateQueries({ queryKey: ['/api/feedback'] });
       form.reset();
+      
+      // 성공 토스트
       toast({
-        title: "피드백 전송 완료!",
+        title: "✨ 피드백 전송 완료!",
         description: "소중한 의견 감사합니다. 검토 후 반영하겠습니다.",
+        duration: 3000,
       });
+      
+      // 스크롤 및 강조 효과
+      setTimeout(() => {
+        if (recentFeedbackRef.current) {
+          recentFeedbackRef.current.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          });
+          setHighlightedFeedbackId(newFeedback.id);
+          
+          // 3초 후 강조 효과 제거
+          setTimeout(() => {
+            setHighlightedFeedbackId(null);
+          }, 3000);
+        }
+      }, 500);
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -117,8 +138,8 @@ export default function Feedback() {
   };
 
   const getAuthorName = (author: any) => {
-    if (author.firstName && author.lastName) {
-      return `${author.firstName} ${author.lastName}`;
+    if (author.lastName && author.firstName) {
+      return `${author.lastName} ${author.firstName}`;
     }
     if (author.firstName) return author.firstName;
     if (author.email) return author.email.split('@')[0];
@@ -126,6 +147,7 @@ export default function Feedback() {
   };
 
   const getAuthorInitials = (author: any) => {
+    if (author.lastName) return author.lastName.charAt(0).toUpperCase();
     if (author.firstName) return author.firstName.charAt(0).toUpperCase();
     if (author.email) return author.email.charAt(0).toUpperCase();
     return 'U';
@@ -133,11 +155,11 @@ export default function Feedback() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800">
         <Header />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse space-y-6">
-            <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-1/3"></div>
+            <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-1/3 mx-auto"></div>
             <div className="h-64 bg-gray-200 dark:bg-slate-700 rounded"></div>
           </div>
         </div>
@@ -150,170 +172,229 @@ export default function Feedback() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800 transition-all duration-300">
       <Header />
       
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header Section */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Hero Section */}
+        <div className="text-center mb-12">
+          <div className="flex justify-center mb-4">
+            <div className="p-3 bg-gradient-to-r from-primary to-violet-500 rounded-full">
+              <MessageSquare className="w-8 h-8 text-white" />
+            </div>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent mb-4">
             서비스 피드백
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            런치패드를 더 나은 플랫폼으로 만들어가는 데 도움을 주세요. 버그 리포트, 기능 제안, 개선 아이디어 등 무엇이든 환영합니다.
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
+            런치패드를 더 나은 플랫폼으로 만들어가는 데 도움을 주세요. 
+            <br className="hidden sm:block" />
+            버그 리포트, 기능 제안, 개선 아이디어 등 무엇이든 환영합니다.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Feedback Form */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <MessageSquare className="w-5 h-5" />
-                <span>새 피드백 작성</span>
-              </CardTitle>
-            </CardHeader>
-            
-            <CardContent>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Category Selection */}
-                <div className="space-y-2">
-                  <Label htmlFor="category">카테고리 *</Label>
-                  <Select
-                    onValueChange={(value) => form.setValue('category', value as any)}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-12">
+          {/* Feedback Form - 2/3 width */}
+          <div className="xl:col-span-2">
+            <Card className="border-0 shadow-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center space-x-3 text-2xl">
+                  <div className="p-2 bg-gradient-to-r from-primary to-violet-500 rounded-lg">
+                    <Send className="w-5 h-5 text-white" />
+                  </div>
+                  <span>새 피드백 작성</span>
+                </CardTitle>
+                <p className="text-gray-600 dark:text-gray-400">
+                  구체적이고 상세한 피드백일수록 더 빠른 개선이 가능합니다
+                </p>
+              </CardHeader>
+              
+              <CardContent>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  {/* Category Selection */}
+                  <div className="space-y-3">
+                    <Label htmlFor="category" className="text-base font-medium">카테고리 선택 *</Label>
+                    <Select onValueChange={(value) => form.setValue('category', value as any)}>
+                      <SelectTrigger className="h-12 text-base">
+                        <SelectValue placeholder="피드백 유형을 선택하세요" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bug">
+                          <div className="flex items-center space-x-3 py-2">
+                            <Bug className="w-5 h-5 text-red-500" />
+                            <div>
+                              <div className="font-medium">버그 신고</div>
+                              <div className="text-sm text-gray-500">오류나 예상과 다른 동작</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="feature">
+                          <div className="flex items-center space-x-3 py-2">
+                            <Lightbulb className="w-5 h-5 text-blue-500" />
+                            <div>
+                              <div className="font-medium">기능 요청</div>
+                              <div className="text-sm text-gray-500">새로운 기능이나 개선사항</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="other">
+                          <div className="flex items-center space-x-3 py-2">
+                            <HelpCircle className="w-5 h-5 text-gray-500" />
+                            <div>
+                              <div className="font-medium">기타</div>
+                              <div className="text-sm text-gray-500">일반적인 의견이나 문의</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {form.formState.errors.category && (
+                      <p className="text-sm text-red-500 flex items-center space-x-1">
+                        <span>⚠️</span>
+                        <span>{form.formState.errors.category.message}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="space-y-3">
+                    <Label htmlFor="content" className="text-base font-medium">피드백 내용 *</Label>
+                    <Textarea
+                      id="content"
+                      placeholder="피드백 내용을 자세히 작성해주세요...
+
+예시:
+• 버그 신고: 언제 발생했는지, 어떤 동작을 했는지, 어떤 오류가 나타났는지
+• 기능 요청: 어떤 기능이 필요한지, 왜 필요한지, 어떻게 동작했으면 좋겠는지
+• 기타: 사용하면서 느낀 점, 개선했으면 하는 부분 등"
+                      rows={8}
+                      className="text-base resize-none"
+                      {...form.register('content')}
+                    />
+                    {form.formState.errors.content && (
+                      <p className="text-sm text-red-500 flex items-center space-x-1">
+                        <span>⚠️</span>
+                        <span>{form.formState.errors.content.message}</span>
+                      </p>
+                    )}
+                    <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center space-x-1">
+                      <Sparkles className="w-4 h-4" />
+                      <span>구체적인 상황이나 재현 방법을 포함해주시면 더 빠른 개선이 가능합니다</span>
+                    </p>
+                  </div>
+
+                  {/* Submit Button */}
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full h-14 text-lg font-medium bg-gradient-to-r from-primary to-violet-500 hover:from-primary/90 hover:to-violet-500/90 transition-all duration-300 shadow-lg hover:shadow-xl"
+                    disabled={createFeedbackMutation.isPending}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="피드백 유형을 선택하세요" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="bug">
-                        <div className="flex items-center space-x-2">
-                          <Bug className="w-4 h-4 text-red-500" />
-                          <span>버그 신고</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="feature">
-                        <div className="flex items-center space-x-2">
-                          <Lightbulb className="w-4 h-4 text-blue-500" />
-                          <span>기능 요청</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="other">
-                        <div className="flex items-center space-x-2">
-                          <HelpCircle className="w-4 h-4 text-gray-500" />
-                          <span>기타</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {form.formState.errors.category && (
-                    <p className="text-sm text-red-500">{form.formState.errors.category.message}</p>
-                  )}
-                </div>
+                    {createFeedbackMutation.isPending ? (
+                      <>
+                        <div className="w-5 h-5 mr-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        전송 중...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-5 h-5 mr-3" />
+                        피드백 전송하기
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
 
-                {/* Content */}
-                <div className="space-y-2">
-                  <Label htmlFor="content">내용 *</Label>
-                  <Textarea
-                    id="content"
-                    placeholder="피드백 내용을 자세히 작성해주세요..."
-                    rows={6}
-                    {...form.register('content')}
-                  />
-                  {form.formState.errors.content && (
-                    <p className="text-sm text-red-500">{form.formState.errors.content.message}</p>
-                  )}
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    구체적인 상황이나 재현 방법을 포함해주시면 더 빠른 개선이 가능합니다.
-                  </p>
-                </div>
-
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full"
-                  disabled={createFeedbackMutation.isPending}
-                >
-                  {createFeedbackMutation.isPending ? (
-                    <>
-                      <Send className="w-4 h-4 mr-2 animate-pulse" />
-                      전송 중...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      피드백 전송하기
-                    </>
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Feedback Guidelines */}
+          {/* Sidebar - 1/3 width */}
           <div className="space-y-6">
-            <Card>
+            {/* Guidelines */}
+            <Card className="border-0 shadow-lg bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle>피드백 가이드라인</CardTitle>
+                <CardTitle className="flex items-center space-x-2">
+                  <Heart className="w-5 h-5 text-red-500" />
+                  <span>피드백 가이드</span>
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-start space-x-3">
-                    <Bug className="w-5 h-5 text-red-500 mt-0.5" />
-                    <div>
+                <div className="space-y-4">
+                  <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Bug className="w-4 h-4 text-red-600" />
                       <h4 className="font-medium text-red-700 dark:text-red-400">버그 신고</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        발생한 오류, 예상과 다른 동작, 성능 문제 등을 신고해주세요.
-                      </p>
                     </div>
+                    <p className="text-sm text-red-600 dark:text-red-300">
+                      발생한 오류, 예상과 다른 동작, 성능 문제 등
+                    </p>
                   </div>
                   
-                  <div className="flex items-start space-x-3">
-                    <Lightbulb className="w-5 h-5 text-blue-500 mt-0.5" />
-                    <div>
+                  <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Lightbulb className="w-4 h-4 text-blue-600" />
                       <h4 className="font-medium text-blue-700 dark:text-blue-400">기능 요청</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        새로운 기능 아이디어나 기존 기능의 개선사항을 제안해주세요.
-                      </p>
                     </div>
+                    <p className="text-sm text-blue-600 dark:text-blue-300">
+                      새로운 기능 아이디어나 기존 기능 개선사항
+                    </p>
                   </div>
                   
-                  <div className="flex items-start space-x-3">
-                    <HelpCircle className="w-5 h-5 text-gray-500 mt-0.5" />
-                    <div>
+                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <HelpCircle className="w-4 h-4 text-gray-600" />
                       <h4 className="font-medium text-gray-700 dark:text-gray-400">기타</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        일반적인 의견, 문의사항, 제휴 제안 등을 남겨주세요.
-                      </p>
                     </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      일반적인 의견, 문의사항, 제휴 제안 등
+                    </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Stats Card */}
-            <Card>
+            {/* Stats */}
+            <Card className="border-0 shadow-lg bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle>피드백 현황</CardTitle>
+                <CardTitle className="flex items-center space-x-2">
+                  <Star className="w-5 h-5 text-yellow-500" />
+                  <span>피드백 현황</span>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">총 피드백</span>
-                    <span className="font-medium">{feedbacks?.length || 0}개</span>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/40">
+                    <span className="font-medium">총 피드백</span>
+                    <span className="text-2xl font-bold text-primary">{feedbacks?.length || 0}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">버그 신고</span>
-                    <span className="font-medium">
-                      {feedbacks?.filter((f: FeedbackWithAuthor) => f.category === 'bug').length || 0}개
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">기능 요청</span>
-                    <span className="font-medium">
-                      {feedbacks?.filter((f: FeedbackWithAuthor) => f.category === 'feature').length || 0}개
-                    </span>
+                  <Separator />
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-2">
+                        <Bug className="w-4 h-4 text-red-500" />
+                        <span className="text-sm">버그 신고</span>
+                      </div>
+                      <span className="font-medium">
+                        {feedbacks?.filter((f: FeedbackWithAuthor) => f.category === 'bug').length || 0}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-2">
+                        <Lightbulb className="w-4 h-4 text-blue-500" />
+                        <span className="text-sm">기능 요청</span>
+                      </div>
+                      <span className="font-medium">
+                        {feedbacks?.filter((f: FeedbackWithAuthor) => f.category === 'feature').length || 0}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-2">
+                        <HelpCircle className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm">기타</span>
+                      </div>
+                      <span className="font-medium">
+                        {feedbacks?.filter((f: FeedbackWithAuthor) => f.category === 'other').length || 0}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -322,9 +403,14 @@ export default function Feedback() {
         </div>
 
         {/* Recent Feedback */}
-        <Card className="mt-8">
+        <Card ref={recentFeedbackRef} className="border-0 shadow-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle>최근 피드백</CardTitle>
+            <CardTitle className="flex items-center space-x-3 text-2xl">
+              <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
+                <MessageSquare className="w-5 h-5 text-white" />
+              </div>
+              <span>최근 피드백</span>
+            </CardTitle>
             <p className="text-gray-600 dark:text-gray-400">
               다른 사용자들의 피드백을 참고해보세요
             </p>
@@ -332,13 +418,14 @@ export default function Feedback() {
           
           <CardContent>
             {feedbacksLoading ? (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="flex space-x-3 animate-pulse">
-                    <div className="w-10 h-10 bg-gray-200 dark:bg-slate-700 rounded-full"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/4"></div>
+                  <div key={i} className="flex space-x-4 animate-pulse">
+                    <div className="w-12 h-12 bg-gray-200 dark:bg-slate-700 rounded-full"></div>
+                    <div className="flex-1 space-y-3">
+                      <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/3"></div>
                       <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-full"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-2/3"></div>
                     </div>
                   </div>
                 ))}
@@ -347,24 +434,38 @@ export default function Feedback() {
               <div className="space-y-6">
                 {feedbacks.slice(0, 10).map((feedback: FeedbackWithAuthor) => {
                   const Icon = categoryIcons[feedback.category as keyof typeof categoryIcons];
+                  const isHighlighted = highlightedFeedbackId === feedback.id;
                   return (
-                    <div key={feedback.id} className="flex space-x-3">
-                      <Avatar className="w-10 h-10">
+                    <div 
+                      key={feedback.id} 
+                      className={`flex space-x-4 p-4 rounded-xl transition-all duration-1000 ${
+                        isHighlighted 
+                          ? 'bg-gradient-to-r from-yellow-100 to-yellow-50 dark:from-yellow-900/30 dark:to-yellow-800/20 ring-2 ring-yellow-400 dark:ring-yellow-600 shadow-lg transform scale-105' 
+                          : 'hover:bg-gray-50 dark:hover:bg-slate-800/50'
+                      }`}
+                    >
+                      <Avatar className={`w-12 h-12 ${isHighlighted ? 'ring-2 ring-yellow-400' : ''}`}>
                         <AvatarImage src={feedback.author.profileImageUrl} />
-                        <AvatarFallback>{getAuthorInitials(feedback.author)}</AvatarFallback>
+                        <AvatarFallback className={isHighlighted ? 'bg-yellow-200 text-yellow-800' : ''}>
+                          {getAuthorInitials(feedback.author)}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <span className="font-medium">{getAuthorName(feedback.author)}</span>
-                          <Badge className={categoryColors[feedback.category as keyof typeof categoryColors]}>
+                        <div className="flex items-center space-x-3 mb-3">
+                          <span className="font-semibold text-lg">{getAuthorName(feedback.author)}</span>
+                          <Badge className={`${categoryColors[feedback.category as keyof typeof categoryColors]} border`}>
                             <Icon className="w-3 h-3 mr-1" />
                             {categoryLabels[feedback.category as keyof typeof categoryLabels]}
                           </Badge>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {new Date(feedback.createdAt).toLocaleDateString('ko-KR')}
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {new Date(feedback.createdAt).toLocaleDateString('ko-KR', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
                           </span>
                         </div>
-                        <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
                           {feedback.content}
                         </p>
                       </div>
@@ -373,10 +474,13 @@ export default function Feedback() {
                 })}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <MessageSquare className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400">
-                  아직 피드백이 없습니다. 첫 번째 피드백을 남겨보세요!
+              <div className="text-center py-16">
+                <MessageSquare className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <h3 className="text-xl font-medium text-gray-500 dark:text-gray-400 mb-2">
+                  아직 피드백이 없습니다
+                </h3>
+                <p className="text-gray-400 dark:text-gray-500">
+                  첫 번째 피드백을 남겨보세요!
                 </p>
               </div>
             )}
