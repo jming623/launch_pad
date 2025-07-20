@@ -87,9 +87,9 @@ export default function Landing() {
             </div>
             <div className="text-center">
               <div className="text-2xl md:text-3xl font-bold text-primary">
-                {stats?.totalViews?.toLocaleString() || 0}
+                {stats?.todayVisits?.toLocaleString() || 0}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">총 조회수</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">일일 방문자수</div>
             </div>
             <div className="text-center">
               <div className="text-2xl md:text-3xl font-bold text-primary">
