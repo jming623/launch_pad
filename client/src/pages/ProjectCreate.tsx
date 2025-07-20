@@ -31,6 +31,7 @@ export default function ProjectCreate() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectFormSchema),
@@ -110,6 +111,61 @@ export default function ProjectCreate() {
   const handleImageUrlChange = (url: string) => {
     form.setValue('imageUrl', url);
     setImagePreview(url);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "파일 형식 오류",
+        description: "이미지 파일만 업로드 가능합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "파일 크기 오류",
+        description: "5MB 이하의 이미지만 업로드 가능합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    
+    try {
+      // Create a FormData object for file upload
+      const formData = new FormData();
+      formData.append('image', file);
+
+      // For now, convert to base64 for preview (in production, upload to cloud storage)
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setImagePreview(result);
+        form.setValue('imageUrl', result);
+      };
+      reader.readAsDataURL(file);
+
+      toast({
+        title: "이미지 업로드 완료",
+        description: "이미지가 성공적으로 업로드되었습니다.",
+      });
+    } catch (error) {
+      toast({
+        title: "업로드 실패",
+        description: "이미지 업로드 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   if (authLoading) {
@@ -213,7 +269,7 @@ export default function ProjectCreate() {
 
               {/* Image URL */}
               <div className="space-y-2">
-                <Label htmlFor="imageUrl">프로젝트 이미지 URL</Label>
+                <Label htmlFor="imageUrl">프로젝트 이미지</Label>
                 <div className="flex space-x-2">
                   <div className="flex-1">
                     <Input
@@ -224,9 +280,27 @@ export default function ProjectCreate() {
                       onChange={(e) => handleImageUrlChange(e.target.value)}
                     />
                   </div>
-                  <Button type="button" variant="outline" size="icon">
-                    <ImageIcon className="w-4 h-4" />
-                  </Button>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      disabled={isUploading}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      disabled={isUploading}
+                    >
+                      {isUploading ? (
+                        <Upload className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <ImageIcon className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
                 {imagePreview && (
                   <div className="mt-2">
@@ -239,7 +313,7 @@ export default function ProjectCreate() {
                   </div>
                 )}
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  프로젝트를 대표하는 이미지의 URL을 입력하세요
+                  이미지 URL을 입력하거나 📷 버튼을 클릭해서 파일을 업로드하세요 (5MB 이하)
                 </p>
               </div>
 
