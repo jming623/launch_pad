@@ -54,7 +54,10 @@ export default function Landing() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               AI 시대의 <span className="bg-gradient-to-r from-primary to-violet-500 bg-clip-text text-transparent">개인 프로젝트</span>를 세상에
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8">혁신적인 아이디어와 창작물을 더 많은 사람들과 공유하고, 새로운 기회를 발견하세요</p>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8">
+              혁신적인 아이디어와 창작물을 더 많은 사람들과 공유하고,<br />
+              새로운 기회를 발견하세요
+            </p>
             <div className="flex justify-center space-x-4">
               <Button 
                 size="lg"
