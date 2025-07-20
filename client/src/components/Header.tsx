@@ -74,11 +74,15 @@ export function Header() {
     onSuccess: () => {
       queryClient.setQueryData(['/api/user'], null);
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      queryClient.clear(); // 모든 캐시 클리어
       toast({
         title: '로그아웃 완료',
         description: '성공적으로 로그아웃되었습니다.',
       });
-      setLocation('/');
+      // 페이지 강제 새로고침으로 캐시 완전 초기화
+      setTimeout(() => {
+        window.location.replace('/'); // replace로 히스토리 스택 제거
+      }, 500);
     },
     onError: (error: Error) => {
       toast({

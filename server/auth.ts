@@ -168,6 +168,11 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", logoutHandler);
   app.get("/api/logout", logoutHandler);
 
+  // Login page - redirect to frontend auth page
+  app.get("/api/login", (req, res) => {
+    res.redirect("/auth");
+  });
+
   // Get current user
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
