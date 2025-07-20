@@ -177,11 +177,11 @@ export default function AuthPage() {
       toast({
         title: '회원가입 성공',
         description: '가입이 완료되었습니다! 닉네임을 설정해주세요.',
-        action: {
-          label: '닉네임 설정',
-          onClick: () => setLocation('/nickname'),
-        },
       });
+      // Navigate to nickname setup page after a short delay
+      setTimeout(() => {
+        setLocation('/nickname');
+      }, 1500);
     },
     onError: (error: Error) => {
       toast({
