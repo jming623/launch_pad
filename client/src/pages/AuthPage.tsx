@@ -24,8 +24,8 @@ const loginSchema = z.object({
 const registerSchema = z.object({
   email: z.string().email('유효한 이메일을 입력해주세요'),
   password: z.string()
-    .min(6, '비밀번호는 최소 6자 이상이어야 합니다')
-    .regex(/^(?=.*[a-zA-Z])(?=.*[0-9])/, '영문과 숫자를 포함해야 합니다'),
+    .min(9, '비밀번호는 최소 9자 이상이어야 합니다')
+    .regex(/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*(),.?":{}|<>])/, '영문, 숫자, 특수문자를 각각 포함해야 합니다'),
 });
 
 type LoginData = z.infer<typeof loginSchema>;
@@ -386,11 +386,11 @@ export default function AuthPage() {
                             <div className="text-sm space-y-1 text-muted-foreground">
                               <div className="flex items-center gap-2">
                                 <div className="w-1 h-1 bg-muted-foreground rounded-full"></div>
-                                <span>최소 6자 이상</span>
+                                <span>최소 9자 이상</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <div className="w-1 h-1 bg-muted-foreground rounded-full"></div>
-                                <span>영문과 숫자 포함</span>
+                                <span>영문, 숫자, 특수문자 각각 포함</span>
                               </div>
                             </div>
                             <FormMessage />

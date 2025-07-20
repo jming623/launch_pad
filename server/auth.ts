@@ -97,7 +97,9 @@ export function setupAuth(app: Express) {
     try {
       const registerSchema = z.object({
         email: z.string().email("올바른 이메일 주소를 입력해주세요"),
-        password: z.string().min(6, "비밀번호는 최소 6자리 이상이어야 합니다"),
+        password: z.string()
+          .min(9, "비밀번호는 최소 9자리 이상이어야 합니다")
+          .regex(/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*(),.?":{}|<>])/, "영문, 숫자, 특수문자를 각각 포함해야 합니다"),
       });
 
       const { email, password } = registerSchema.parse(req.body);
