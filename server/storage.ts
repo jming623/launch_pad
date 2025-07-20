@@ -311,9 +311,9 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(comments.projectId, projectId), eq(comments.isActive, true)))
       .orderBy(desc(comments.createdAt));
 
-    // Group comments by parent
-    const commentsMap = new Map<number, CommentWithAuthor>();
+    // Separate root comments and replies
     const rootComments: CommentWithAuthor[] = [];
+    const replies: CommentWithAuthor[] = [];
 
     allComments.forEach(({ comment, author }) => {
       const commentWithAuthor: CommentWithAuthor = {
@@ -322,25 +322,29 @@ export class DatabaseStorage implements IStorage {
         replies: [],
       };
 
-      commentsMap.set(comment.id, commentWithAuthor);
-
       if (comment.parentId) {
-        const parent = commentsMap.get(comment.parentId);
-        if (parent) {
-          parent.replies!.push(commentWithAuthor);
-        }
+        replies.push(commentWithAuthor);
       } else {
         rootComments.push(commentWithAuthor);
       }
     });
 
-    // Sort root comments by createdAt descending
-    rootComments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
-    // Sort replies by createdAt descending
+    // Group replies with their parent comments
+    replies.forEach(reply => {
+      const parent = rootComments.find(comment => comment.id === reply.parentId);
+      if (parent) {
+        parent.replies!.push(reply);
+      }
+    });
+
+    // Sort replies within each comment by createdAt descending
     rootComments.forEach(comment => {
       if (comment.replies && comment.replies.length > 0) {
-        comment.replies.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        comment.replies.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA;
+        });
       }
     });
 
