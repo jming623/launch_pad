@@ -218,7 +218,13 @@ export default function ProjectCreate() {
           </CardHeader>
           
           <CardContent>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form 
+              onSubmit={(e) => {
+                console.log('Form submit triggered!');
+                return form.handleSubmit(onSubmit)(e);
+              }} 
+              className="space-y-6"
+            >
               {/* Project Title */}
               <div className="space-y-2">
                 <Label htmlFor="title">프로젝트 제목 *</Label>
@@ -393,6 +399,13 @@ export default function ProjectCreate() {
                   size="lg"
                   className="w-full"
                   disabled={createProjectMutation.isPending}
+                  onClick={(e) => {
+                    console.log('Submit button clicked!');
+                    e.preventDefault();
+                    const formData = form.getValues();
+                    console.log('Current form data:', formData);
+                    form.handleSubmit(onSubmit)();
+                  }}
                 >
                   {createProjectMutation.isPending ? (
                     <>
