@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import Home from "@/pages/Home";
+import Projects from "@/pages/Projects";
 import ProjectDetail from "@/pages/ProjectDetail";
 import ProjectCreate from "@/pages/ProjectCreate";
 import Feedback from "@/pages/Feedback";
@@ -40,12 +41,14 @@ function Router() {
         )}
       </Route>
       
+      {/* Projects page - available to all users */}
+      <Route path="/projects" component={Projects} />
+      
       {/* Protected routes - only for authenticated users */}
       {isAuthenticated && (
         <>
           <Route path="/create" component={ProjectCreate} />
           <Route path="/feedback" component={Feedback} />
-          <Route path="/projects" component={Home} />
         </>
       )}
       
