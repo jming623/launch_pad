@@ -4,12 +4,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ToastAction } from '@/components/ui/toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { isUnauthorizedError } from '@/lib/authUtils';
 import { apiRequest } from '@/lib/queryClient';
 import type { ProjectWithDetails } from '@shared/schema';
-import { Heart, Eye, MessageSquare, User } from 'lucide-react';
+import { Heart, Eye, MessageSquare, User, ArrowRight } from 'lucide-react';
 
 interface ProjectCardProps {
   project: ProjectWithDetails;
@@ -48,10 +49,16 @@ export function ProjectCard({ project, rank }: ProjectCardProps) {
           title: "로그인 필요",
           description: "좋아요를 누르려면 로그인이 필요합니다.",
           variant: "destructive",
+          action: (
+            <ToastAction
+              altText="로그인하러 가기"
+              onClick={() => window.location.href = "/api/login"}
+            >
+              <ArrowRight className="w-4 h-4 mr-1" />
+              로그인하기
+            </ToastAction>
+          ),
         });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
         return;
       }
       toast({
@@ -68,10 +75,16 @@ export function ProjectCard({ project, rank }: ProjectCardProps) {
         title: "로그인 필요",
         description: "좋아요를 누르려면 로그인이 필요합니다.",
         variant: "destructive",
+        action: (
+          <ToastAction
+            altText="로그인하러 가기"
+            onClick={() => window.location.href = "/api/login"}
+          >
+            <ArrowRight className="w-4 h-4 mr-1" />
+            로그인하기
+          </ToastAction>
+        ),
       });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
       return;
     }
     likeMutation.mutate();
