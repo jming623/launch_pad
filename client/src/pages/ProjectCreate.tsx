@@ -152,11 +152,11 @@ export default function ProjectCreate() {
       return;
     }
 
-    // Check file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
+    // Check file size (1MB limit for base64 encoding)
+    if (file.size > 1 * 1024 * 1024) {
       toast({
         title: "파일 크기 오류",
-        description: "5MB 이하의 이미지만 업로드 가능합니다.",
+        description: "1MB 이하의 이미지만 업로드 가능합니다.",
         variant: "destructive",
       });
       return;
@@ -169,14 +169,13 @@ export default function ProjectCreate() {
       const formData = new FormData();
       formData.append('image', file);
 
-      // For now, convert to base64 for preview (in production, upload to cloud storage)
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setImagePreview(result);
-        form.setValue('imageUrl', result);
-      };
-      reader.readAsDataURL(file);
+      // For now, create object URL for preview and use placeholder URL
+      const objectUrl = URL.createObjectURL(file);
+      setImagePreview(objectUrl);
+      
+      // Use a placeholder URL instead of base64 to avoid large payloads
+      const placeholderUrl = `https://via.placeholder.com/400x300/6366f1/ffffff?text=${encodeURIComponent(file.name)}`;
+      form.setValue('imageUrl', placeholderUrl);
 
       toast({
         title: "이미지 업로드 완료",
@@ -348,7 +347,7 @@ export default function ProjectCreate() {
                   </div>
                 )}
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  이미지 URL을 입력하거나 📷 버튼을 클릭해서 파일을 업로드하세요 (5MB 이하)
+                  이미지 URL을 입력하거나 📷 버튼을 클릭해서 파일을 업로드하세요 (1MB 이하)
                 </p>
               </div>
 
