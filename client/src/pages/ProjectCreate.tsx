@@ -399,12 +399,22 @@ export default function ProjectCreate() {
                   size="lg"
                   className="w-full"
                   disabled={createProjectMutation.isPending}
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     console.log('Submit button clicked!');
                     e.preventDefault();
                     const formData = form.getValues();
                     console.log('Current form data:', formData);
-                    form.handleSubmit(onSubmit)();
+                    
+                    // Manually trigger form validation and submission
+                    const isValid = await form.trigger();
+                    console.log('Form validation result:', isValid);
+                    
+                    if (isValid) {
+                      console.log('Form is valid, calling onSubmit directly');
+                      onSubmit(formData);
+                    } else {
+                      console.log('Form validation failed:', form.formState.errors);
+                    }
                   }}
                 >
                   {createProjectMutation.isPending ? (
