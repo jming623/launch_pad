@@ -316,9 +316,7 @@ export default function Feedback() {
     );
   }
 
-  if (!isAuthenticated) {
-    return null; // Will redirect via useEffect
-  }
+  // Remove authentication requirement for viewing feedback
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800 transition-all duration-300">
@@ -359,6 +357,22 @@ export default function Feedback() {
               </CardHeader>
               
               <CardContent>
+                {!isAuthenticated ? (
+                  <div className="text-center py-8">
+                    <div className="mb-4">
+                      <div className="p-3 bg-primary/10 rounded-full w-fit mx-auto mb-4">
+                        <MessageSquare className="w-8 h-8 text-primary" />
+                      </div>
+                      <h3 className="text-xl font-semibold mb-2">로그인이 필요합니다</h3>
+                      <p className="text-gray-600 dark:text-gray-400 mb-6">
+                        피드백을 작성하려면 로그인해주세요
+                      </p>
+                      <Button asChild className="bg-primary hover:bg-primary/90">
+                        <a href="/api/login">로그인하기</a>
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   {/* Category Selection */}
                   <div className="space-y-3">
@@ -455,6 +469,7 @@ export default function Feedback() {
                     )}
                   </Button>
                 </form>
+                )}
               </CardContent>
             </Card>
           </div>

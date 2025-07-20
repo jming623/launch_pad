@@ -45,12 +45,14 @@ function Router() {
       {/* Projects page - available to all users */}
       <Route path="/projects" component={Projects} />
       
+      {/* Feedback page - available to all users */}
+      <Route path="/feedback" component={Feedback} />
+      
       {/* Protected routes - only for authenticated users */}
       {isAuthenticated && (
         <>
           <Route path="/create" component={ProjectCreate} />
           <Route path="/projects/:id/edit" component={ProjectEdit} />
-          <Route path="/feedback" component={Feedback} />
         </>
       )}
       
