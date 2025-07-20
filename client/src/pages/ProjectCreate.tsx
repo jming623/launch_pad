@@ -80,6 +80,7 @@ export default function ProjectCreate() {
       setLocation(`/projects/${project.id}`);
     },
     onError: (error) => {
+      console.error('Project creation error:', error);
       if (isUnauthorizedError(error)) {
         toast({
           title: "로그인 필요",
@@ -93,7 +94,7 @@ export default function ProjectCreate() {
       }
       toast({
         title: "등록 실패",
-        description: "프로젝트 등록 중 오류가 발생했습니다.",
+        description: `프로젝트 등록 중 오류가 발생했습니다: ${error.message}`,
         variant: "destructive",
       });
     },
