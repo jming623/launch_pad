@@ -70,6 +70,9 @@ export interface IStorage {
   recordVisit(visit: InsertSiteVisit): Promise<SiteVisit>;
   getTodayVisits(): Promise<number>;
   
+  // Get categories with project counts
+  getCategoriesWithCounts(): Promise<(Category & { projectCount: number })[]>;
+  
   // Stats
   getStats(): Promise<{
     totalProjects: number;
@@ -119,6 +122,23 @@ export class DatabaseStorage implements IStorage {
   async createCategory(category: InsertCategory): Promise<Category> {
     const [newCategory] = await db.insert(categories).values(category).returning();
     return newCategory;
+  }
+
+  async getCategoriesWithCounts(): Promise<(Category & { projectCount: number })[]> {
+    const result = await db
+      .select({
+        category: categories,
+        projectCount: sql<number>`CAST(COUNT(${projects.id}) AS INTEGER)`,
+      })
+      .from(categories)
+      .leftJoin(projects, and(eq(categories.id, projects.categoryId), eq(projects.isActive, true)))
+      .groupBy(categories.id)
+      .orderBy(asc(categories.name));
+
+    return result.map(({ category, projectCount }) => ({
+      ...category,
+      projectCount: projectCount || 0,
+    }));
   }
 
   // Project operations

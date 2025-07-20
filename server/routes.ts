@@ -41,11 +41,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Categories
   app.get('/api/categories', async (req, res) => {
     try {
-      const categories = await storage.getCategories();
-      res.json(categories);
+      const withCounts = req.query.withCounts === 'true';
+      if (withCounts) {
+        const categories = await storage.getCategoriesWithCounts();
+        res.json(categories);
+      } else {
+        const categories = await storage.getCategories();
+        res.json(categories);
+      }
     } catch (error) {
       console.error("Error fetching categories:", error);
       res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  // Create default categories (admin endpoint)
+  app.post('/api/categories/init', async (req, res) => {
+    try {
+      const defaultCategories = [
+        { name: "웹 개발", slug: "web-dev", description: "웹사이트, 웹앱 개발 프로젝트" },
+        { name: "모바일 앱", slug: "mobile-app", description: "iOS, Android 앱 개발" },
+        { name: "AI/ML", slug: "ai-ml", description: "인공지능, 머신러닝 프로젝트" },
+        { name: "게임", slug: "game", description: "게임 개발 프로젝트" },
+        { name: "디자인", slug: "design", description: "UI/UX, 그래픽 디자인" },
+        { name: "데이터", slug: "data", description: "데이터 분석, 시각화" },
+        { name: "블록체인", slug: "blockchain", description: "블록체인, 암호화폐 관련" },
+        { name: "기타", slug: "etc", description: "기타 프로젝트" }
+      ];
+
+      const createdCategories = [];
+      for (const category of defaultCategories) {
+        try {
+          const newCategory = await storage.createCategory(category);
+          createdCategories.push(newCategory);
+        } catch (error) {
+          // Category might already exist, skip
+          console.log(`Category "${category.name}" might already exist`);
+        }
+      }
+
+      res.json({ 
+        message: "Categories initialized", 
+        created: createdCategories.length,
+        categories: createdCategories 
+      });
+    } catch (error) {
+      console.error("Error initializing categories:", error);
+      res.status(500).json({ message: "Failed to initialize categories" });
     }
   });
 

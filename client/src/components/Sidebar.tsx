@@ -10,7 +10,12 @@ interface SidebarProps {
 
 export function Sidebar({ selectedCategory, onCategoryChange }: SidebarProps) {
   const { data: categories, isLoading } = useQuery({
-    queryKey: ['/api/categories'],
+    queryKey: ['/api/categories', { withCounts: true }],
+    queryFn: async () => {
+      const response = await fetch('/api/categories?withCounts=true');
+      if (!response.ok) throw new Error('Failed to fetch categories');
+      return response.json();
+    },
   });
 
   const { data: stats } = useQuery({
@@ -53,8 +58,7 @@ export function Sidebar({ selectedCategory, onCategoryChange }: SidebarProps) {
                 >
                   {category.name}
                   <span className="text-sm">
-                    {/* TODO: Add project count per category */}
-                    0
+                    {category.projectCount || 0}
                   </span>
                 </Button>
               ))}
