@@ -79,24 +79,8 @@ export default function Feedback() {
 
   const watchedCategory = form.watch('category');
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      toast({
-        title: "로그인 필요",
-        description: "피드백을 작성하려면 로그인이 필요합니다.",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, authLoading, toast]);
-
   const { data: feedbacks, isLoading: feedbacksLoading } = useQuery({
     queryKey: ['/api/feedback'],
-    enabled: isAuthenticated,
   });
 
   // Pagination logic
