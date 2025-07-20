@@ -16,6 +16,7 @@ import Feedback from "@/pages/Feedback";
 import AuthPage from "@/pages/AuthPage";
 import Search from "@/pages/Search";
 import NicknameSetup from "@/pages/NicknameSetup";
+import Profile from "@/pages/Profile";
 
 function Router() {
   const { isAuthenticated, isLoading, error } = useAuth();
@@ -59,6 +60,7 @@ function Router() {
         <>
           <Route path="/create" component={ProjectCreate} />
           <Route path="/projects/:id/edit" component={ProjectEdit} />
+          <Route path="/profile" component={Profile} />
         </>
       )}
       

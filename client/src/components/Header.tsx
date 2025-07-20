@@ -55,6 +55,8 @@ export function Header() {
 
   const getUserDisplayName = () => {
     if (!user) return '사용자';
+    // 닉네임이 있으면 닉네임을 우선 표시
+    if (user.nickname) return user.nickname;
     // 한국 문화권: 성(lastName) + 이름(firstName) 순서로 표시
     const fullName = `${user.firstName ? (user.lastName ? ' ' : '') + user.firstName : ''}`.trim();
     return fullName || user.email?.split('@')[0] || '사용자';
@@ -62,6 +64,8 @@ export function Header() {
 
   const getUserInitials = () => {
     if (!user) return 'U';
+    // 닉네임이 있으면 닉네임의 첫 글자 사용
+    if (user.nickname) return user.nickname.charAt(0).toUpperCase();
     // 성(lastName)의 첫 글자를 아바타에 표시 (한국 문화권)
     const familyName = user.lastName || user.firstName || user.email?.split('@')[0] || 'User';
     return familyName.charAt(0).toUpperCase();
@@ -210,7 +214,7 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center space-x-2">
                     <Avatar className="w-8 h-8">
-                      <AvatarImage src={user.profileImageUrl} />
+                      <AvatarImage src={user.avatarUrl} />
                       <AvatarFallback>{getUserInitials()}</AvatarFallback>
                     </Avatar>
                     <span className="hidden md:block font-medium">
@@ -220,6 +224,13 @@ export function Header() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="flex items-center">
+                      <User className="w-4 h-4 mr-2" />
+                      프로필 수정
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/create" className="flex items-center">
                       <Plus className="w-4 h-4 mr-2" />

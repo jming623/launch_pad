@@ -1,8 +1,12 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { setupAuth, isAuthenticated } from "./auth";
 import { storage } from "./storage";
 import { z } from "zod";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { 
   insertUserSchema, 
   insertProjectSchema, 
@@ -14,6 +18,47 @@ import {
 export function registerRoutes(app: Express): Server {
   // Set up authentication
   setupAuth(app);
+
+  // Create uploads directory if it doesn't exist
+  const uploadsDir = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  // Configure multer for file uploads
+  const storage_multer = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+  });
+
+  const upload = multer({
+    storage: storage_multer,
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = /jpeg|jpg|png|gif|webp/;
+      const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+      const mimetype = allowedTypes.test(file.mimetype);
+
+      if (mimetype && extname) {
+        return cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed!'));
+      }
+    }
+  });
+
+  // Serve uploaded files
+  app.use('/uploads', (req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+  }, express.static(uploadsDir));
 
   // Initialize categories route
   app.post('/api/categories/init', async (req, res) => {
@@ -511,15 +556,15 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Update user profile API
-  app.put('/api/user/profile', isAuthenticated, async (req, res) => {
+  // Update user profile API with file upload
+  app.put('/api/user/profile', isAuthenticated, upload.single('avatar'), async (req: any, res) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({ message: "인증이 필요합니다" });
       }
 
-      const { nickname, profileImageUrl } = req.body;
+      const { nickname } = req.body;
       
       // Validate nickname if provided
       if (nickname) {
@@ -529,10 +574,26 @@ export function registerRoutes(app: Express): Server {
         }
       }
 
-      const updatedUser = await storage.updateUserProfile(userId, {
-        nickname,
-        profileImageUrl: profileImageUrl || undefined,
-      });
+      // Handle avatar upload
+      let avatarUrl = undefined;
+      if (req.file) {
+        avatarUrl = `/uploads/${req.file.filename}`;
+        
+        // Delete old avatar file if exists
+        const currentUser = await storage.getUser(userId);
+        if (currentUser?.avatarUrl && currentUser.avatarUrl.startsWith('/uploads/')) {
+          const oldFilePath = path.join(process.cwd(), currentUser.avatarUrl);
+          if (fs.existsSync(oldFilePath)) {
+            fs.unlinkSync(oldFilePath);
+          }
+        }
+      }
+
+      const updateData: any = {};
+      if (nickname) updateData.nickname = nickname;
+      if (avatarUrl) updateData.avatarUrl = avatarUrl;
+
+      const updatedUser = await storage.updateUser(userId, updateData);
 
       if (!updatedUser) {
         return res.status(404).json({ message: "사용자를 찾을 수 없습니다" });
