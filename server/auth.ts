@@ -64,11 +64,18 @@ export function setupAuth(app: Express) {
       async (email, password, done) => {
         try {
           const user = await storage.getUserByEmail(email);
-          if (!user || !user.password || !(await comparePasswords(password, user.password))) {
-            return done(null, false, { message: "Invalid email or password" });
+          if (!user) {
+            return done(null, false, { message: "등록되지 않은 이메일입니다" });
+          }
+          if (!user.password) {
+            return done(null, false, { message: "소셜 로그인 계정입니다. 해당 서비스로 로그인해주세요" });
+          }
+          if (!(await comparePasswords(password, user.password))) {
+            return done(null, false, { message: "비밀번호가 올바르지 않습니다" });
           }
           return done(null, user);
         } catch (error) {
+          console.error("Login error:", error);
           return done(error);
         }
       }
@@ -137,12 +144,18 @@ export function setupAuth(app: Express) {
   // Login endpoint
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err: any, user: any, info: any) => {
-      if (err) return next(err);
+      if (err) {
+        console.error("Login authentication error:", err);
+        return res.status(500).json({ message: "로그인 처리 중 오류가 발생했습니다" });
+      }
       if (!user) {
-        return res.status(401).json({ message: info?.message || "Authentication failed" });
+        return res.status(401).json({ message: info?.message || "이메일 또는 비밀번호가 올바르지 않습니다" });
       }
       req.login(user, (err) => {
-        if (err) return next(err);
+        if (err) {
+          console.error("Session login error:", err);
+          return res.status(500).json({ message: "로그인 세션 생성 중 오류가 발생했습니다" });
+        }
         res.status(200).json({
           id: user.id,
           email: user.email,

@@ -370,6 +370,37 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Check email availability endpoint
+  app.post("/api/user/check-email", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email || typeof email !== "string") {
+        return res.status(400).json({ message: "이메일을 입력해주세요" });
+      }
+
+      // Validate email format
+      const emailSchema = z.string().email();
+      try {
+        emailSchema.parse(email);
+      } catch {
+        return res.status(400).json({ message: "올바른 이메일 형식이 아닙니다" });
+      }
+
+      // Check if email is already taken
+      const existingUser = await storage.getUserByEmail(email);
+      const available = !existingUser;
+
+      res.json({ 
+        available,
+        message: available ? "사용 가능한 이메일입니다" : "이미 사용 중인 이메일입니다"
+      });
+    } catch (error) {
+      console.error("Email check error:", error);
+      res.status(500).json({ message: "이메일 확인 중 오류가 발생했습니다" });
+    }
+  });
+
   // Stats
   app.get('/api/stats', async (req, res) => {
     try {

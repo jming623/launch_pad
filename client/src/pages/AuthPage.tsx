@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,8 +13,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useAuth } from '@/hooks/useAuth';
-import { useEffect } from 'react';
-import { Github, Mail, ArrowLeft, Home } from 'lucide-react';
+import { Github, Mail, ArrowLeft, Home, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { debounce } from 'lodash';
 
 const loginSchema = z.object({
   email: z.string().email('유효한 이메일을 입력해주세요'),
@@ -23,7 +23,9 @@ const loginSchema = z.object({
 
 const registerSchema = z.object({
   email: z.string().email('유효한 이메일을 입력해주세요'),
-  password: z.string().min(6, '비밀번호는 최소 6자 이상이어야 합니다'),
+  password: z.string()
+    .min(6, '비밀번호는 최소 6자 이상이어야 합니다')
+    .regex(/^(?=.*[a-zA-Z])(?=.*[0-9])/, '영문과 숫자를 포함해야 합니다'),
 });
 
 type LoginData = z.infer<typeof loginSchema>;
@@ -34,6 +36,8 @@ export default function AuthPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [emailMessage, setEmailMessage] = useState('');
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -57,6 +61,69 @@ export default function AuthPage() {
       password: '',
     },
   });
+
+  // Email validation
+  const validateEmail = debounce(async (email: string) => {
+    if (!email || !email.includes('@')) {
+      setEmailStatus('idle');
+      setEmailMessage('');
+      return;
+    }
+
+    try {
+      const emailSchema = z.string().email();
+      emailSchema.parse(email);
+      setEmailStatus('checking');
+      
+      const response = await fetch('/api/user/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        if (result.available) {
+          setEmailStatus('available');
+          setEmailMessage('사용 가능한 이메일입니다');
+        } else {
+          setEmailStatus('taken');
+          setEmailMessage('이미 사용 중인 이메일입니다');
+        }
+      } else {
+        setEmailStatus('idle');
+        setEmailMessage('');
+      }
+    } catch (error) {
+      setEmailStatus('idle');
+      setEmailMessage('');
+    }
+  }, 500);
+
+  // Watch email changes
+  const emailValue = registerForm.watch('email');
+  useEffect(() => {
+    if (emailValue) {
+      validateEmail(emailValue);
+    } else {
+      setEmailStatus('idle');
+      setEmailMessage('');
+    }
+  }, [emailValue]);
+
+  const getEmailStatusIcon = () => {
+    switch (emailStatus) {
+      case 'checking':
+        return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
+      case 'available':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'taken':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return null;
+    }
+  };
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginData) => {
@@ -280,12 +347,25 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>이메일</FormLabel>
                             <FormControl>
-                              <Input
-                                type="email"
-                                placeholder="이메일을 입력하세요"
-                                {...field}
-                              />
+                              <div className="relative">
+                                <Input
+                                  type="email"
+                                  placeholder="이메일을 입력하세요"
+                                  {...field}
+                                />
+                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                  {getEmailStatusIcon()}
+                                </div>
+                              </div>
                             </FormControl>
+                            {emailMessage && (
+                              <div className={`text-sm ${
+                                emailStatus === 'available' ? 'text-green-600' : 
+                                emailStatus === 'taken' ? 'text-red-600' : 'text-muted-foreground'
+                              }`}>
+                                {emailMessage}
+                              </div>
+                            )}
                             <FormMessage />
                           </FormItem>
                         )}
@@ -299,10 +379,20 @@ export default function AuthPage() {
                             <FormControl>
                               <Input
                                 type="password"
-                                placeholder="비밀번호 (최소 6자)"
+                                placeholder="비밀번호를 입력하세요"
                                 {...field}
                               />
                             </FormControl>
+                            <div className="text-sm space-y-1 text-muted-foreground">
+                              <div className="flex items-center gap-2">
+                                <div className="w-1 h-1 bg-muted-foreground rounded-full"></div>
+                                <span>최소 6자 이상</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-1 h-1 bg-muted-foreground rounded-full"></div>
+                                <span>영문과 숫자 포함</span>
+                              </div>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -310,7 +400,7 @@ export default function AuthPage() {
                       <Button
                         type="submit"
                         className="w-full"
-                        disabled={registerMutation.isPending}
+                        disabled={registerMutation.isPending || emailStatus === 'taken' || emailStatus === 'checking'}
                       >
                         {registerMutation.isPending ? '가입 중...' : '회원가입'}
                       </Button>
