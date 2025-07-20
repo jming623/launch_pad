@@ -178,10 +178,8 @@ export default function AuthPage() {
         title: '회원가입 성공',
         description: '가입이 완료되었습니다! 닉네임을 설정해주세요.',
       });
-      // Navigate to nickname setup page after a short delay
-      setTimeout(() => {
-        setLocation('/nickname');
-      }, 1500);
+      // Navigate directly to nickname setup page
+      setLocation('/nickname');
     },
     onError: (error: Error) => {
       toast({

@@ -628,6 +628,70 @@ export class DatabaseStorage implements IStorage {
       return lowerText.includes(lowerWord);
     });
   }
+
+  async checkProfanity(text: string): Promise<{ isClean: boolean; reason?: string }> {
+    try {
+      const words = await this.getProfanityWords();
+      const lowerText = text.toLowerCase().replace(/\s+/g, ''); // Remove spaces for better detection
+      
+      for (const wordRecord of words) {
+        const cleanWord = wordRecord.word.toLowerCase().replace(/\s+/g, '');
+        
+        // Check if text contains the profanity word
+        if (lowerText.includes(cleanWord)) {
+          return {
+            isClean: false,
+            reason: `Contains inappropriate content: ${wordRecord.word} (${wordRecord.category})`,
+          };
+        }
+        
+        // Additional checks for variations (ㅅ instead of 시, etc.)
+        const variations = this.getProfanityVariations(cleanWord);
+        for (const variation of variations) {
+          if (lowerText.includes(variation)) {
+            return {
+              isClean: false,
+              reason: `Contains inappropriate content: ${wordRecord.word} (${wordRecord.category})`,
+            };
+          }
+        }
+      }
+      
+      return { isClean: true };
+    } catch (error) {
+      console.error("Error checking profanity:", error);
+      // Default to allowing the text if there's an error checking
+      return { isClean: true };
+    }
+  }
+
+  private getProfanityVariations(word: string): string[] {
+    const variations: string[] = [];
+    
+    // Korean character variations
+    const replacements: Record<string, string[]> = {
+      '시': ['ㅅㅣ', 'ㅅ', 'si'],
+      '발': ['ㅂㅏㄹ', 'ㅂ', 'bal'],
+      '씨': ['ㅆㅣ', 'ㅆ', 'ssi'],
+      '병': ['ㅂㅕㅇ', 'byeong'],
+      '신': ['ㅅㅣㄴ', 'sin'],
+      '개': ['ㄱㅐ', 'gae'],
+      '새': ['ㅅㅐ', 'sae'],
+      '끼': ['ㄲㅣ', 'kki'],
+    };
+    
+    // Generate variations by replacing characters
+    let current = word;
+    for (const [original, reps] of Object.entries(replacements)) {
+      if (current.includes(original)) {
+        for (const rep of reps) {
+          variations.push(current.replace(original, rep));
+        }
+      }
+    }
+    
+    return variations;
+  }
 }
 
 export const storage = new DatabaseStorage();
