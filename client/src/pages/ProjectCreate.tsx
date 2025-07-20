@@ -330,9 +330,9 @@ export default function ProjectCreate() {
                       disabled={isUploading}
                     >
                       {isUploading ? (
-                        <Upload className="w-4 h-4 animate-spin" />
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
                       ) : (
-                        <ImageIcon className="w-4 h-4" />
+                        <Upload className="h-4 w-4" />
                       )}
                     </Button>
                   </div>
@@ -342,62 +342,69 @@ export default function ProjectCreate() {
                     <img
                       src={imagePreview}
                       alt="미리보기"
-                      className="w-full h-48 object-cover rounded-lg border"
+                      className="w-full max-w-md h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
                       onError={() => setImagePreview(null)}
                     />
                   </div>
                 )}
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  이미지 URL을 입력하거나 📷 버튼을 클릭해서 파일을 업로드하세요 (500KB 이하)
+                  이미지 URL을 입력하거나 📁 버튼을 클릭해서 파일을 업로드하세요 (500KB 이하)
                 </p>
               </div>
 
               {/* Video URL */}
               <div className="space-y-2">
-                <Label htmlFor="videoUrl">데모 영상 URL</Label>
-                <Input
-                  id="videoUrl"
-                  type="url"
-                  placeholder="https://youtube.com/watch?v=..."
-                  {...form.register('videoUrl')}
-                />
+                <Label htmlFor="videoUrl">데모 비디오 URL</Label>
+                <div className="flex items-center space-x-2">
+                  <div className="flex-1">
+                    <Input
+                      id="videoUrl"
+                      type="url"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      {...form.register('videoUrl')}
+                    />
+                  </div>
+                  <Link className="h-4 w-4 text-gray-400" />
+                </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  YouTube, Vimeo 등의 영상 링크 (선택사항)
+                  선택사항입니다. YouTube, Vimeo 등의 비디오 링크를 추가하세요.
                 </p>
               </div>
 
               {/* Demo URL */}
               <div className="space-y-2">
-                <Label htmlFor="demoUrl">데모 링크</Label>
-                <div className="flex space-x-2">
+                <Label htmlFor="demoUrl">데모 사이트 URL</Label>
+                <div className="flex items-center space-x-2">
                   <div className="flex-1">
                     <Input
                       id="demoUrl"
                       type="url"
-                      placeholder="https://your-project-demo.com"
+                      placeholder="https://my-awesome-project.vercel.app"
                       {...form.register('demoUrl')}
                     />
                   </div>
-                  <Button type="button" variant="outline" size="icon">
-                    <Link className="w-4 h-4" />
-                  </Button>
+                  <ImageIcon className="h-4 w-4 text-gray-400" />
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  사용자가 직접 체험할 수 있는 링크
+                  선택사항입니다. 실제 작동하는 사이트가 있다면 링크를 추가하세요.
                 </p>
               </div>
 
               {/* Contact Info */}
               <div className="space-y-2">
-                <Label htmlFor="contactInfo">연락처</Label>
-                <Input
-                  id="contactInfo"
-                  type="email"
-                  placeholder="your.email@example.com"
-                  {...form.register('contactInfo')}
-                />
+                <Label htmlFor="contactInfo">연락처 정보</Label>
+                <div className="flex items-center space-x-2">
+                  <div className="flex-1">
+                    <Input
+                      id="contactInfo"
+                      placeholder="이메일, SNS, GitHub 등"
+                      {...form.register('contactInfo')}
+                    />
+                  </div>
+                  <Mail className="h-4 w-4 text-gray-400" />
+                </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  협업이나 문의를 받을 이메일 주소
+                  선택사항입니다. 프로젝트에 관심 있는 사람들이 연락할 수 있는 정보를 입력하세요.
                 </p>
               </div>
 

@@ -43,6 +43,7 @@ export default function ProjectEdit() {
   const queryClient = useQueryClient();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ['/api/projects', id],
@@ -378,16 +379,18 @@ export default function ProjectEdit() {
                   </div>
                   <div className="relative">
                     <input
+                      ref={fileInputRef}
                       type="file"
                       accept="image/*"
                       onChange={handleFileUpload}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      className="hidden"
                       disabled={isUploading}
                     />
                     <Button
                       type="button"
                       variant="outline"
                       size="icon"
+                      onClick={() => fileInputRef.current?.click()}
                       disabled={isUploading}
                       className="relative"
                     >
