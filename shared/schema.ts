@@ -98,6 +98,18 @@ export const feedback = pgTable("feedback", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Site visits table for tracking daily visitors
+export const siteVisits = pgTable("site_visits", {
+  id: serial("id").primaryKey(),
+  sessionId: varchar("session_id", { length: 255 }).notNull(),
+  userAgent: varchar("user_agent", { length: 500 }),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  visitDate: timestamp("visit_date").defaultNow(),
+}, (table) => [
+  index("idx_site_visits_session_date").on(table.sessionId, table.visitDate),
+  index("idx_site_visits_date").on(table.visitDate),
+]);
+
 // Relations
 export const userRelations = relations(users, ({ many }) => ({
   projects: many(projects),
@@ -214,3 +226,6 @@ export type FeedbackWithAuthor = Feedback & {
   author: User;
 };
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
+
+export type SiteVisit = typeof siteVisits.$inferSelect;
+export type InsertSiteVisit = typeof siteVisits.$inferInsert;

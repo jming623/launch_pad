@@ -5,6 +5,7 @@ import {
   likes,
   comments,
   feedback,
+  siteVisits,
   type User,
   type UpsertUser,
   type Project,
@@ -18,6 +19,8 @@ import {
   type Feedback,
   type FeedbackWithAuthor,
   type InsertFeedback,
+  type SiteVisit,
+  type InsertSiteVisit,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, sql, and, isNull, or } from "drizzle-orm";
@@ -63,11 +66,15 @@ export interface IStorage {
   updateFeedback(id: number, data: { content: string; category: string }, userId: string): Promise<FeedbackWithAuthor | null>;
   deleteFeedback(id: number, userId: string): Promise<boolean>;
   
+  // Site visits operations
+  recordVisit(visit: InsertSiteVisit): Promise<SiteVisit>;
+  getTodayVisits(): Promise<number>;
+  
   // Stats
   getStats(): Promise<{
     totalProjects: number;
     totalUsers: number;
-    totalViews: number;
+    todayVisits: number;
     totalLikes: number;
   }>;
 }
@@ -414,17 +421,62 @@ export class DatabaseStorage implements IStorage {
     return true;
   }
 
+  // Site visits operations
+  async recordVisit(visitData: InsertSiteVisit): Promise<SiteVisit> {
+    // Check if this session already visited today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const [existingVisit] = await db
+      .select()
+      .from(siteVisits)
+      .where(
+        and(
+          eq(siteVisits.sessionId, visitData.sessionId),
+          sql`${siteVisits.visitDate} >= ${today.toISOString()}`,
+          sql`${siteVisits.visitDate} < ${tomorrow.toISOString()}`
+        )
+      );
+
+    if (existingVisit) {
+      return existingVisit;
+    }
+
+    const [newVisit] = await db.insert(siteVisits).values(visitData).returning();
+    return newVisit;
+  }
+
+  async getTodayVisits(): Promise<number> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const [result] = await db
+      .select({ count: sql<number>`COUNT(DISTINCT ${siteVisits.sessionId})::int` })
+      .from(siteVisits)
+      .where(
+        and(
+          sql`${siteVisits.visitDate} >= ${today.toISOString()}`,
+          sql`${siteVisits.visitDate} < ${tomorrow.toISOString()}`
+        )
+      );
+
+    return result.count;
+  }
+
   // Stats
   async getStats(): Promise<{
     totalProjects: number;
     totalUsers: number;
-    totalViews: number;
+    todayVisits: number;
     totalLikes: number;
   }> {
     const [projectStats] = await db
       .select({
         totalProjects: sql<number>`COUNT(*)`,
-        totalViews: sql<number>`SUM(${projects.viewCount})`,
         totalLikes: sql<number>`SUM(${projects.likeCount})`,
       })
       .from(projects)
@@ -436,10 +488,12 @@ export class DatabaseStorage implements IStorage {
       })
       .from(users);
 
+    const todayVisits = await this.getTodayVisits();
+
     return {
       totalProjects: projectStats.totalProjects || 0,
       totalUsers: userStats.totalUsers || 0,
-      totalViews: projectStats.totalViews || 0,
+      todayVisits,
       totalLikes: projectStats.totalLikes || 0,
     };
   }

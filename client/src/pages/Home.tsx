@@ -74,9 +74,9 @@ export default function Home() {
             </div>
             <div className="text-center p-4 bg-white/50 dark:bg-slate-800/50 rounded-lg backdrop-blur-sm">
               <div className="text-xl md:text-2xl font-bold text-primary">
-                {stats?.totalViews?.toLocaleString() || 0}
+                {stats?.todayVisits?.toLocaleString() || 0}
               </div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">조회수</div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">일일 방문자</div>
             </div>
             <div className="text-center p-4 bg-white/50 dark:bg-slate-800/50 rounded-lg backdrop-blur-sm">
               <div className="text-xl md:text-2xl font-bold text-primary">

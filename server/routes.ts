@@ -5,9 +5,36 @@ import { setupAuth, isAuthenticated } from "./auth";
 import { insertProjectSchema, insertCommentSchema, insertFeedbackSchema } from "@shared/schema";
 import { z } from "zod";
 
+// Visitor tracking middleware
+const visitorTrackingMiddleware = async (req: any, res: any, next: any) => {
+  try {
+    // Generate or get session ID
+    let sessionId = req.session?.visitorId;
+    if (!sessionId) {
+      sessionId = `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      if (req.session) {
+        req.session.visitorId = sessionId;
+      }
+    }
+
+    // Record visit
+    await storage.recordVisit({
+      sessionId,
+      userAgent: req.get('User-Agent') || '',
+      ipAddress: req.ip || req.connection.remoteAddress || '',
+    });
+  } catch (error) {
+    console.error('Error tracking visitor:', error);
+  }
+  next();
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   setupAuth(app);
+  
+  // Add visitor tracking middleware for main routes
+  app.use('/', visitorTrackingMiddleware);
 
   // Current user route is now handled in auth.ts
 

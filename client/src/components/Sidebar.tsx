@@ -85,19 +85,19 @@ export function Sidebar({ selectedCategory, onCategoryChange }: SidebarProps) {
           <CardContent className="space-y-3">
             <div className="flex justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">총 프로젝트</span>
-              <span className="font-medium">{stats.totalProjects.toLocaleString()}</span>
+              <span className="font-medium">{stats?.totalProjects?.toLocaleString() || 0}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">활성 사용자</span>
-              <span className="font-medium">{stats.totalUsers.toLocaleString()}</span>
+              <span className="font-medium">{stats?.totalUsers?.toLocaleString() || 0}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">총 조회수</span>
-              <span className="font-medium">{stats.totalViews.toLocaleString()}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">일일 방문자</span>
+              <span className="font-medium">{stats?.todayVisits?.toLocaleString() || 0}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">총 좋아요</span>
-              <span className="font-medium">{stats.totalLikes.toLocaleString()}</span>
+              <span className="font-medium">{stats?.totalLikes?.toLocaleString() || 0}</span>
             </div>
           </CardContent>
         </Card>
