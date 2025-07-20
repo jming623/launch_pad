@@ -7,6 +7,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ToastAction } from '@/components/ui/toast';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,7 +26,8 @@ import {
   ChevronDown,
   Plus,
   MessageSquare,
-  LogOut
+  LogOut,
+  ArrowRight
 } from 'lucide-react';
 
 export function Header() {
@@ -101,6 +103,26 @@ export function Header() {
     logoutMutation.mutate();
   };
 
+  const handleCreateClick = (e: React.MouseEvent) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      toast({
+        title: "로그인 필요",
+        description: "프로젝트를 등록하려면 로그인이 필요합니다.",
+        variant: "destructive",
+        action: (
+          <ToastAction
+            altText="로그인하러 가기"
+            onClick={() => window.location.href = "/api/login"}
+          >
+            <ArrowRight className="w-4 h-4 mr-1" />
+            로그인하기
+          </ToastAction>
+        ),
+      });
+    }
+  };
+
   return (
     <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 sticky top-0 z-50 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -119,17 +141,32 @@ export function Header() {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex space-x-6">
               {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`font-medium transition-colors ${
-                    location === item.href
-                      ? 'text-primary'
-                      : 'text-gray-700 dark:text-gray-300 hover:text-primary'
-                  }`}
-                >
-                  {item.name}
-                </Link>
+                item.name === '등록하기' ? (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={handleCreateClick}
+                    className={`font-medium transition-colors ${
+                      location === item.href
+                        ? 'text-primary'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-primary'
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                ) : (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`font-medium transition-colors ${
+                      location === item.href
+                        ? 'text-primary'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-primary'
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                )
               ))}
             </nav>
           </div>
@@ -235,18 +272,36 @@ export function Header() {
                   {/* Mobile Navigation */}
                   <div className="space-y-2">
                     {navigation.map((item) => (
-                      <Link
-                        key={item.name}
-                        href={item.href}
-                        className={`block px-3 py-2 rounded-md transition-colors ${
-                          location === item.href
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
-                        }`}
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        {item.name}
-                      </Link>
+                      item.name === '등록하기' ? (
+                        <Link
+                          key={item.name}
+                          href={item.href}
+                          className={`block px-3 py-2 rounded-md transition-colors ${
+                            location === item.href
+                              ? 'bg-primary text-primary-foreground'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                          }`}
+                          onClick={(e) => {
+                            handleCreateClick(e);
+                            setMobileMenuOpen(false);
+                          }}
+                        >
+                          {item.name}
+                        </Link>
+                      ) : (
+                        <Link
+                          key={item.name}
+                          href={item.href}
+                          className={`block px-3 py-2 rounded-md transition-colors ${
+                            location === item.href
+                              ? 'bg-primary text-primary-foreground'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                          }`}
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          {item.name}
+                        </Link>
+                      )
                     ))}
                   </div>
                   
