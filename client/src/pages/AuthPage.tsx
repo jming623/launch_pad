@@ -155,7 +155,7 @@ export default function AuthPage() {
 
       {/* Left side - Form */}
       <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-lg">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               런치패드에 오신 것을 환영합니다
