@@ -66,19 +66,6 @@ export default function Feedback() {
 
   const watchedCategory = form.watch('category');
 
-  // Pagination logic
-  const paginatedFeedbacks = useMemo(() => {
-    if (!feedbacks) return [];
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return feedbacks.slice(startIndex, endIndex);
-  }, [feedbacks, currentPage, itemsPerPage]);
-
-  const totalPages = useMemo(() => {
-    if (!feedbacks) return 0;
-    return Math.ceil(feedbacks.length / itemsPerPage);
-  }, [feedbacks, itemsPerPage]);
-
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -98,6 +85,21 @@ export default function Feedback() {
     queryKey: ['/api/feedback'],
     enabled: isAuthenticated,
   });
+
+  // Pagination logic
+  const paginatedFeedbacks = useMemo(() => {
+    if (!feedbacks) return [];
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return feedbacks.slice(startIndex, endIndex);
+  }, [feedbacks, currentPage, itemsPerPage]);
+
+  const totalPages = useMemo(() => {
+    if (!feedbacks) return 0;
+    return Math.ceil(feedbacks.length / itemsPerPage);
+  }, [feedbacks, itemsPerPage]);
+
+
 
   const createFeedbackMutation = useMutation({
     mutationFn: async (data: FeedbackFormData) => {
