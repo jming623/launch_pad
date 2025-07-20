@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,9 +31,11 @@ import {
 export function Header() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const navigation = [
     { name: '홈', href: '/' },
@@ -55,6 +59,39 @@ export function Header() {
     if (!user) return 'U';
     const name = user.firstName || user.email?.split('@')[0] || 'User';
     return name.charAt(0).toUpperCase();
+  };
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Logout failed');
+      }
+    },
+    onSuccess: () => {
+      queryClient.setQueryData(['/api/user'], null);
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      toast({
+        title: '로그아웃 완료',
+        description: '성공적으로 로그아웃되었습니다.',
+      });
+      setLocation('/');
+    },
+    onError: (error: Error) => {
+      toast({
+        title: '로그아웃 실패',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleLogout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    logoutMutation.mutate();
   };
 
   return (
@@ -151,11 +188,13 @@ export function Header() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <a href="/api/logout" className="flex items-center text-red-600">
-                      <LogOut className="w-4 h-4 mr-2" />
-                      로그아웃
-                    </a>
+                  <DropdownMenuItem 
+                    onClick={handleLogout} 
+                    className="flex items-center text-red-600 cursor-pointer"
+                    disabled={logoutMutation.isPending}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    {logoutMutation.isPending ? '로그아웃 중...' : '로그아웃'}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -217,8 +256,13 @@ export function Header() {
                           <p className="text-sm text-gray-500">{user.email}</p>
                         </div>
                       </div>
-                      <Button asChild variant="outline" className="w-full">
-                        <a href="/api/logout">로그아웃</a>
+                      <Button 
+                        variant="outline" 
+                        className="w-full" 
+                        onClick={handleLogout}
+                        disabled={logoutMutation.isPending}
+                      >
+                        {logoutMutation.isPending ? '로그아웃 중...' : '로그아웃'}
                       </Button>
                     </div>
                   ) : (
