@@ -10,6 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -18,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { isUnauthorizedError } from '@/lib/authUtils';
 import { apiRequest } from '@/lib/queryClient';
 import { insertFeedbackSchema, type FeedbackWithAuthor } from '@shared/schema';
-import { MessageSquare, Bug, Lightbulb, HelpCircle, Send, Heart, Star, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageSquare, Bug, Lightbulb, HelpCircle, Send, Heart, Star, Sparkles, ChevronLeft, ChevronRight, Edit2, Trash2, MoreVertical } from 'lucide-react';
 
 const feedbackFormSchema = z.object({
   content: z.string().min(10, '피드백 내용을 최소 10자 이상 작성해주세요'),
@@ -55,8 +58,18 @@ export default function Feedback() {
   const [highlightedFeedbackId, setHighlightedFeedbackId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [editingFeedback, setEditingFeedback] = useState<FeedbackWithAuthor | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const form = useForm<FeedbackFormData>({
+    resolver: zodResolver(feedbackFormSchema),
+    defaultValues: {
+      content: '',
+      category: 'other',
+    },
+  });
+
+  const editForm = useForm<FeedbackFormData>({
     resolver: zodResolver(feedbackFormSchema),
     defaultValues: {
       content: '',
@@ -98,6 +111,81 @@ export default function Feedback() {
     if (!feedbacks) return 0;
     return Math.ceil(feedbacks.length / itemsPerPage);
   }, [feedbacks, itemsPerPage]);
+
+  // Edit feedback mutation
+  const editFeedbackMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: FeedbackFormData }) => {
+      const response = await apiRequest('PUT', `/api/feedback/${id}`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/feedback'] });
+      setEditDialogOpen(false);
+      setEditingFeedback(null);
+      editForm.reset();
+      
+      toast({
+        title: "✨ 피드백 수정 완료!",
+        description: "피드백이 성공적으로 수정되었습니다.",
+        duration: 3000,
+      });
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "로그인 필요",
+          description: "다시 로그인해주세요.",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      
+      toast({
+        title: "수정 실패",
+        description: error.message || "피드백 수정에 실패했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete feedback mutation
+  const deleteFeedbackMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest('DELETE', `/api/feedback/${id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/feedback'] });
+      
+      toast({
+        title: "🗑️ 피드백 삭제 완료!",
+        description: "피드백이 성공적으로 삭제되었습니다.",
+        duration: 3000,
+      });
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "로그인 필요",
+          description: "다시 로그인해주세요.",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      
+      toast({
+        title: "삭제 실패",
+        description: error.message || "피드백 삭제에 실패했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
 
 
 
@@ -178,6 +266,24 @@ export default function Feedback() {
     }
     
     createFeedbackMutation.mutate(data);
+  };
+
+  const onEditSubmit = (data: FeedbackFormData) => {
+    if (!editingFeedback) return;
+    editFeedbackMutation.mutate({ id: editingFeedback.id, data });
+  };
+
+  const handleEditClick = (feedback: FeedbackWithAuthor) => {
+    setEditingFeedback(feedback);
+    editForm.reset({
+      content: feedback.content,
+      category: feedback.category as 'bug' | 'feature' | 'other',
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (feedbackId: number) => {
+    deleteFeedbackMutation.mutate(feedbackId);
   };
 
   const getAuthorName = (author: any) => {
@@ -498,19 +604,66 @@ export default function Feedback() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-3">
-                          <span className="font-semibold text-lg">{getAuthorName(feedback.author)}</span>
-                          <Badge className={`${categoryColors[feedback.category as keyof typeof categoryColors]} border`}>
-                            <Icon className="w-3 h-3 mr-1" />
-                            {categoryLabels[feedback.category as keyof typeof categoryLabels]}
-                          </Badge>
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
-                            {new Date(feedback.createdAt).toLocaleDateString('ko-KR', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                          </span>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <span className="font-semibold text-lg">{getAuthorName(feedback.author)}</span>
+                            <Badge className={`${categoryColors[feedback.category as keyof typeof categoryColors]} border`}>
+                              <Icon className="w-3 h-3 mr-1" />
+                              {categoryLabels[feedback.category as keyof typeof categoryLabels]}
+                            </Badge>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                              {new Date(feedback.updatedAt || feedback.createdAt).toLocaleDateString('ko-KR', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                              {feedback.updatedAt && feedback.updatedAt !== feedback.createdAt && (
+                                <span className="ml-1 text-xs text-blue-500">(수정됨)</span>
+                              )}
+                            </span>
+                          </div>
+                          
+                          {/* Action buttons for author */}
+                          {user && feedback.authorId === user.id && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEditClick(feedback)}>
+                                  <Edit2 className="mr-2 h-4 w-4" />
+                                  수정
+                                </DropdownMenuItem>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      삭제
+                                    </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>피드백 삭제</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        정말로 이 피드백을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>취소</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDeleteClick(feedback.id)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        삭제
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </div>
                         <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
                           {feedback.content}
@@ -591,6 +744,86 @@ export default function Feedback() {
       </main>
 
       <Footer />
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>피드백 수정</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="edit-content">피드백 내용</Label>
+              <Textarea
+                id="edit-content"
+                placeholder="피드백 내용을 입력해주세요 (최소 10자)"
+                className="min-h-[120px] resize-none"
+                {...editForm.register('content')}
+              />
+              {editForm.formState.errors.content && (
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {editForm.formState.errors.content.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-category">카테고리</Label>
+              <Select
+                value={editForm.watch('category')}
+                onValueChange={(value) => editForm.setValue('category', value as 'bug' | 'feature' | 'other')}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="카테고리를 선택하세요" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bug">
+                    <div className="flex items-center space-x-2">
+                      <Bug className="w-4 h-4 text-red-500" />
+                      <span>버그 신고</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="feature">
+                    <div className="flex items-center space-x-2">
+                      <Lightbulb className="w-4 h-4 text-blue-500" />
+                      <span>기능 요청</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="other">
+                    <div className="flex items-center space-x-2">
+                      <HelpCircle className="w-4 h-4 text-gray-500" />
+                      <span>기타</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {editForm.formState.errors.category && (
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {editForm.formState.errors.category.message}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditDialogOpen(false)}
+              >
+                취소
+              </Button>
+              <Button
+                type="submit"
+                disabled={editFeedbackMutation.isPending}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              >
+                {editFeedbackMutation.isPending ? '수정 중...' : '수정하기'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

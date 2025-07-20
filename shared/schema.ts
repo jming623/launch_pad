@@ -95,6 +95,7 @@ export const feedback = pgTable("feedback", {
   authorId: varchar("author_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Relations

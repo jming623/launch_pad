@@ -246,13 +246,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const feedback = await storage.createFeedback(feedbackData);
-      res.status(201).json(feedback);
+      const feedbackWithAuthor = await storage.getFeedback();
+      const newFeedback = feedbackWithAuthor.find(f => f.id === feedback.id);
+      
+      res.status(201).json(newFeedback);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid feedback data", errors: error.errors });
       }
       console.error("Error creating feedback:", error);
       res.status(500).json({ message: "Failed to create feedback" });
+    }
+  });
+
+  app.put('/api/feedback/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const feedbackId = parseInt(req.params.id);
+      const userId = req.user.id;
+      const { content, category } = req.body;
+      
+      if (!content || content.trim().length < 10) {
+        return res.status(400).json({ message: "피드백 내용을 최소 10자 이상 작성해주세요" });
+      }
+
+      if (!['bug', 'feature', 'other'].includes(category)) {
+        return res.status(400).json({ message: "올바른 카테고리를 선택해주세요" });
+      }
+
+      const updatedFeedback = await storage.updateFeedback(feedbackId, { content, category }, userId);
+      
+      if (!updatedFeedback) {
+        return res.status(404).json({ message: "피드백을 찾을 수 없거나 수정 권한이 없습니다" });
+      }
+      
+      res.json(updatedFeedback);
+    } catch (error) {
+      console.error("Error updating feedback:", error);
+      res.status(500).json({ message: "Failed to update feedback" });
+    }
+  });
+
+  app.delete('/api/feedback/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const feedbackId = parseInt(req.params.id);
+      const userId = req.user.id;
+      
+      const success = await storage.deleteFeedback(feedbackId, userId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "피드백을 찾을 수 없거나 삭제 권한이 없습니다" });
+      }
+      
+      res.json({ message: "피드백이 성공적으로 삭제되었습니다" });
+    } catch (error) {
+      console.error("Error deleting feedback:", error);
+      res.status(500).json({ message: "Failed to delete feedback" });
     }
   });
 

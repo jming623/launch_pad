@@ -60,7 +60,8 @@ export interface IStorage {
   // Feedback operations
   getFeedback(): Promise<FeedbackWithAuthor[]>;
   createFeedback(feedback: InsertFeedback): Promise<Feedback>;
-  deleteFeedback(id: number): Promise<boolean>;
+  updateFeedback(id: number, data: { content: string; category: string }, userId: string): Promise<FeedbackWithAuthor | null>;
+  deleteFeedback(id: number, userId: string): Promise<boolean>;
   
   // Stats
   getStats(): Promise<{
@@ -345,7 +346,7 @@ export class DatabaseStorage implements IStorage {
       .from(feedback)
       .leftJoin(users, eq(feedback.authorId, users.id))
       .where(eq(feedback.isActive, true))
-      .orderBy(desc(feedback.createdAt));
+      .orderBy(desc(feedback.updatedAt));
 
     return results.map(({ feedback: fb, author }) => ({
       ...fb,
@@ -358,13 +359,59 @@ export class DatabaseStorage implements IStorage {
     return newFeedback;
   }
 
-  async deleteFeedback(id: number): Promise<boolean> {
-    const [deletedFeedback] = await db
+  async updateFeedback(id: number, data: { content: string; category: string }, userId: string): Promise<FeedbackWithAuthor | null> {
+    // Check if the feedback exists and belongs to the user
+    const [existingFeedback] = await db
+      .select()
+      .from(feedback)
+      .where(and(eq(feedback.id, id), eq(feedback.authorId, userId), eq(feedback.isActive, true)));
+
+    if (!existingFeedback) {
+      return null;
+    }
+
+    const [updatedFeedback] = await db
       .update(feedback)
-      .set({ isActive: false })
+      .set({
+        content: data.content,
+        category: data.category,
+        updatedAt: new Date(),
+      })
       .where(eq(feedback.id, id))
       .returning();
-    return !!deletedFeedback;
+
+    // Get the updated feedback with author info
+    const result = await db
+      .select({
+        feedback: feedback,
+        author: users,
+      })
+      .from(feedback)
+      .leftJoin(users, eq(feedback.authorId, users.id))
+      .where(eq(feedback.id, id));
+
+    return result.map(({ feedback: fb, author }) => ({
+      ...fb,
+      author: author!,
+    }))[0] || null;
+  }
+
+  async deleteFeedback(id: number, userId: string): Promise<boolean> {
+    const [existingFeedback] = await db
+      .select()
+      .from(feedback)
+      .where(and(eq(feedback.id, id), eq(feedback.authorId, userId), eq(feedback.isActive, true)));
+
+    if (!existingFeedback) {
+      return false;
+    }
+
+    await db
+      .update(feedback)
+      .set({ isActive: false })
+      .where(eq(feedback.id, id));
+
+    return true;
   }
 
   // Stats
