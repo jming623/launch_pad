@@ -14,6 +14,7 @@ import ProjectCreate from "@/pages/ProjectCreate";
 import ProjectEdit from "@/pages/ProjectEdit";
 import Feedback from "@/pages/Feedback";
 import AuthPage from "@/pages/AuthPage";
+import Search from "@/pages/Search";
 
 function Router() {
   const { isAuthenticated, isLoading, error } = useAuth();
@@ -47,6 +48,9 @@ function Router() {
       
       {/* Feedback page - available to all users */}
       <Route path="/feedback" component={Feedback} />
+      
+      {/* Search page - available to all users */}
+      <Route path="/search" component={Search} />
       
       {/* Protected routes - only for authenticated users */}
       {isAuthenticated && (

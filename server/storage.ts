@@ -23,7 +23,7 @@ import {
   type InsertSiteVisit,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, sql, and, isNull, or } from "drizzle-orm";
+import { eq, desc, asc, sql, and, isNull, or, ilike } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -42,6 +42,11 @@ export interface IStorage {
     limit?: number;
     offset?: number;
     timeframe?: 'today' | 'weekly' | 'monthly' | 'all';
+    userId?: string;
+  }): Promise<ProjectWithDetails[]>;
+  searchProjects(query: string, options?: {
+    limit?: number;
+    offset?: number;
     userId?: string;
   }): Promise<ProjectWithDetails[]>;
   getProject(id: number, userId?: string): Promise<ProjectWithDetails | undefined>;
@@ -183,6 +188,46 @@ export class DatabaseStorage implements IStorage {
       .offset(offset);
 
     const results = await query;
+    
+    return results.map(({ project, author, category, isLiked }) => ({
+      ...project,
+      author: author!,
+      category,
+      isLiked,
+    }));
+  }
+
+  async searchProjects(query: string, options: {
+    limit?: number;
+    offset?: number;
+    userId?: string;
+  } = {}): Promise<ProjectWithDetails[]> {
+    const { limit = 20, offset = 0, userId } = options;
+    
+    const searchQuery = `%${query}%`;
+    
+    const results = await db
+      .select({
+        project: projects,
+        author: users,
+        category: categories,
+        isLiked: userId ? sql<boolean>`EXISTS(SELECT 1 FROM ${likes} WHERE ${likes.projectId} = ${projects.id} AND ${likes.userId} = ${userId})` : sql<boolean>`false`,
+      })
+      .from(projects)
+      .leftJoin(users, eq(projects.authorId, users.id))
+      .leftJoin(categories, eq(projects.categoryId, categories.id))
+      .where(
+        and(
+          eq(projects.isActive, true),
+          or(
+            ilike(projects.title, searchQuery),
+            ilike(projects.description, searchQuery)
+          )
+        )
+      )
+      .orderBy(desc(projects.likeCount), desc(projects.createdAt))
+      .limit(limit)
+      .offset(offset);
     
     return results.map(({ project, author, category, isLiked }) => ({
       ...project,

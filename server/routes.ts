@@ -88,6 +88,35 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Search projects
+  app.get('/api/projects/search', async (req, res) => {
+    try {
+      const { 
+        q: query, 
+        page = '1', 
+        limit = '20' 
+      } = req.query;
+      
+      if (!query || typeof query !== 'string') {
+        return res.status(400).json({ message: "Search query is required" });
+      }
+      
+      const userId = req.user?.id;
+      
+      const options = {
+        limit: parseInt(limit as string),
+        offset: (parseInt(page as string) - 1) * parseInt(limit as string),
+        userId,
+      };
+
+      const projects = await storage.searchProjects(query, options);
+      res.json(projects);
+    } catch (error) {
+      console.error("Error searching projects:", error);
+      res.status(500).json({ message: "Failed to search projects" });
+    }
+  });
+
   app.get('/api/projects/:id', async (req, res) => {
     try {
       const projectId = parseInt(req.params.id);
