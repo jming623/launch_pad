@@ -152,11 +152,11 @@ export default function ProjectCreate() {
       return;
     }
 
-    // Check file size (1MB limit for base64 encoding)
-    if (file.size > 1 * 1024 * 1024) {
+    // Check file size (500KB limit for base64 encoding)
+    if (file.size > 500 * 1024) {
       toast({
         title: "파일 크기 오류",
-        description: "1MB 이하의 이미지만 업로드 가능합니다.",
+        description: "500KB 이하의 이미지만 업로드 가능합니다.",
         variant: "destructive",
       });
       return;
@@ -169,13 +169,14 @@ export default function ProjectCreate() {
       const formData = new FormData();
       formData.append('image', file);
 
-      // Create object URL for preview and use a real image hosting service
-      const objectUrl = URL.createObjectURL(file);
-      setImagePreview(objectUrl);
-      
-      // For demo purposes, use a real image URL from Unsplash
-      const demoImageUrl = `https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&h=600&fit=crop&crop=center`;
-      form.setValue('imageUrl', demoImageUrl);
+      // Convert to base64 for storage (in production, upload to cloud storage)
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setImagePreview(result);
+        form.setValue('imageUrl', result);
+      };
+      reader.readAsDataURL(file);
 
       toast({
         title: "이미지 업로드 완료",
@@ -347,7 +348,7 @@ export default function ProjectCreate() {
                   </div>
                 )}
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  이미지 URL을 입력하거나 📷 버튼을 클릭해서 파일을 업로드하세요 (1MB 이하)
+                  이미지 URL을 입력하거나 📷 버튼을 클릭해서 파일을 업로드하세요 (500KB 이하)
                 </p>
               </div>
 
