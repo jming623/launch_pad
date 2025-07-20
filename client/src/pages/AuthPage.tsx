@@ -78,7 +78,7 @@ export default function AuthPage() {
       return response.json();
     },
     onSuccess: (user) => {
-      queryClient.setQueryData(['/api/auth/user'], user);
+      queryClient.setQueryData(['/api/user'], user);
       toast({
         title: '로그인 성공',
         description: `환영합니다, ${user.firstName}님!`,
@@ -110,7 +110,7 @@ export default function AuthPage() {
       return response.json();
     },
     onSuccess: (user) => {
-      queryClient.setQueryData(['/api/auth/user'], user);
+      queryClient.setQueryData(['/api/user'], user);
       toast({
         title: '회원가입 성공',
         description: `환영합니다, ${user.firstName}님!`,

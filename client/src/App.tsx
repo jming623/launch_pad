@@ -24,6 +24,8 @@ function Router() {
       {/* Public routes - available to all users */}
       <Route path="/projects/:id" component={ProjectDetail} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/login" component={AuthPage} />
+      <Route path="/register" component={AuthPage} />
       
       {/* Root route - shows Landing for non-authenticated, Home for authenticated */}
       <Route path="/">

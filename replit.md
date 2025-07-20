@@ -53,10 +53,11 @@ Preferred communication style: Simple, everyday language.
 ## Data Flow
 
 ### Authentication Flow
-1. OAuth integration with Replit for user authentication
-2. Session management using PostgreSQL session store
-3. User profile creation and management through Replit claims
-4. Protected routes with authentication middleware
+1. Traditional email/password registration and login with secure bcrypt hashing
+2. Multi-provider OAuth support (Google, GitHub, Replit) for social authentication
+3. Session management using PostgreSQL session store with connect-pg-simple
+4. Protected routes with passport.js authentication middleware
+5. Automatic login after successful registration
 
 ### Project Discovery Flow
 1. Projects displayed with ranking system (Today/Weekly/Monthly/All Time)
@@ -77,8 +78,9 @@ Preferred communication style: Simple, everyday language.
 - **Connection Pooling**: Using @neondatabase/serverless for optimal performance
 
 ### Authentication Services
-- **Replit OAuth**: Primary authentication provider
-- **OpenID Connect**: Standards-based authentication flow
+- **Traditional Email/Password**: Primary authentication method with bcrypt hashing
+- **Multi-Provider OAuth**: Google, GitHub, and Replit social login options
+- **Session Management**: PostgreSQL-based session storage with passport.js
 
 ### Development Tools
 - **Vite**: Frontend build tool with React plugin
