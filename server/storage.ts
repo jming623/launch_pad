@@ -334,6 +334,16 @@ export class DatabaseStorage implements IStorage {
       }
     });
 
+    // Sort root comments by createdAt descending
+    rootComments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    // Sort replies by createdAt descending
+    rootComments.forEach(comment => {
+      if (comment.replies && comment.replies.length > 0) {
+        comment.replies.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+    });
+
     return rootComments;
   }
 
