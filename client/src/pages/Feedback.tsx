@@ -20,7 +20,8 @@ import { apiRequest } from '@/lib/queryClient';
 import { insertFeedbackSchema, type FeedbackWithAuthor } from '@shared/schema';
 import { MessageSquare, Bug, Lightbulb, HelpCircle, Send, Heart, Star, Sparkles } from 'lucide-react';
 
-const feedbackFormSchema = insertFeedbackSchema.extend({
+const feedbackFormSchema = z.object({
+  content: z.string().min(10, '피드백 내용을 최소 10자 이상 작성해주세요'),
   category: z.enum(['bug', 'feature', 'other'], {
     required_error: '카테고리를 선택해주세요',
   }),
@@ -60,6 +61,8 @@ export default function Feedback() {
       category: 'other',
     },
   });
+
+  const watchedCategory = form.watch('category');
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -134,6 +137,27 @@ export default function Feedback() {
   });
 
   const onSubmit = (data: FeedbackFormData) => {
+    console.log('Form submitted:', data);
+    console.log('Form errors:', form.formState.errors);
+    
+    if (!data.content?.trim()) {
+      toast({
+        title: "입력 오류",
+        description: "피드백 내용을 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!data.category) {
+      toast({
+        title: "입력 오류", 
+        description: "카테고리를 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     createFeedbackMutation.mutate(data);
   };
 
@@ -214,7 +238,10 @@ export default function Feedback() {
                   {/* Category Selection */}
                   <div className="space-y-3">
                     <Label htmlFor="category" className="text-base font-medium">카테고리 선택 *</Label>
-                    <Select onValueChange={(value) => form.setValue('category', value as any)}>
+                    <Select 
+                      value={watchedCategory} 
+                      onValueChange={(value) => form.setValue('category', value as any)}
+                    >
                       <SelectTrigger className="h-12 text-base">
                         <SelectValue placeholder="피드백 유형을 선택하세요" />
                       </SelectTrigger>
@@ -298,7 +325,7 @@ export default function Feedback() {
                     ) : (
                       <>
                         <Send className="w-5 h-5 mr-3" />
-                        피드백 전송하기
+                        피드백 등록하기
                       </>
                     )}
                   </Button>
