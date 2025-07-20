@@ -11,6 +11,7 @@ import Home from "@/pages/Home";
 import Projects from "@/pages/Projects";
 import ProjectDetail from "@/pages/ProjectDetail";
 import ProjectCreate from "@/pages/ProjectCreate";
+import ProjectEdit from "@/pages/ProjectEdit";
 import Feedback from "@/pages/Feedback";
 import AuthPage from "@/pages/AuthPage";
 
@@ -48,6 +49,7 @@ function Router() {
       {isAuthenticated && (
         <>
           <Route path="/create" component={ProjectCreate} />
+          <Route path="/projects/:id/edit" component={ProjectEdit} />
           <Route path="/feedback" component={Feedback} />
         </>
       )}

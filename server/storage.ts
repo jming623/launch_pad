@@ -220,6 +220,8 @@ export class DatabaseStorage implements IStorage {
     return newProject;
   }
 
+
+
   async updateProject(id: number, project: Partial<InsertProject>): Promise<Project | undefined> {
     const [updatedProject] = await db
       .update(projects)
@@ -244,6 +246,8 @@ export class DatabaseStorage implements IStorage {
       .set({ viewCount: sql`${projects.viewCount} + 1` })
       .where(eq(projects.id, id));
   }
+
+
 
   // Like operations
   async toggleLike(projectId: number, userId: string): Promise<{ liked: boolean; likeCount: number }> {

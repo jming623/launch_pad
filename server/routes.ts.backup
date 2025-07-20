@@ -1,31 +1,72 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth, isAuthenticated } from "./auth";
 import { storage } from "./storage";
+import { setupAuth, isAuthenticated } from "./auth";
+import { insertProjectSchema, insertCommentSchema, insertFeedbackSchema } from "@shared/schema";
 import { z } from "zod";
-import { 
-  insertUserSchema, 
-  insertProjectSchema, 
-  insertCommentSchema, 
-  insertFeedbackSchema,
-  insertCategorySchema
-} from "@shared/schema";
 
-export function registerRoutes(app: Express): Server {
-  // Set up authentication
+// Visitor tracking middleware
+const visitorTrackingMiddleware = async (req: any, res: any, next: any) => {
+  try {
+    // Generate or get session ID
+    let sessionId = req.session?.visitorId;
+    if (!sessionId) {
+      sessionId = `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      if (req.session) {
+        req.session.visitorId = sessionId;
+      }
+    }
+
+    // Record visit
+    await storage.recordVisit({
+      sessionId,
+      userAgent: req.get('User-Agent') || '',
+      ipAddress: req.ip || req.connection.remoteAddress || '',
+    });
+  } catch (error) {
+    console.error('Error tracking visitor:', error);
+  }
+  next();
+};
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth middleware
   setupAuth(app);
+  
+  // Add visitor tracking middleware for main routes
+  app.use('/', visitorTrackingMiddleware);
 
-  // Initialize categories route
+  // Current user route is now handled in auth.ts
+
+  // Categories
+  app.get('/api/categories', async (req, res) => {
+    try {
+      const withCounts = req.query.withCounts === 'true';
+      if (withCounts) {
+        const categories = await storage.getCategoriesWithCounts();
+        res.json(categories);
+      } else {
+        const categories = await storage.getCategories();
+        res.json(categories);
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  // Create default categories (admin endpoint)
   app.post('/api/categories/init', async (req, res) => {
     try {
       const defaultCategories = [
-        { name: "웹 개발", slug: "web-dev", description: "웹사이트 및 웹 애플리케이션" },
-        { name: "모바일 앱", slug: "mobile-app", description: "iOS, Android 앱" },
-        { name: "AI/ML", slug: "ai-ml", description: "인공지능 및 머신러닝" },
-        { name: "게임", slug: "game", description: "게임 개발" },
-        { name: "디자인", slug: "design", description: "UI/UX 디자인" },
-        { name: "도구", slug: "tools", description: "개발 도구 및 유틸리티" },
-        { name: "기타", slug: "others", description: "기타 프로젝트" }
+        { name: "웹 개발", slug: "web-dev", description: "웹사이트, 웹앱 개발 프로젝트" },
+        { name: "모바일 앱", slug: "mobile-app", description: "iOS, Android 앱 개발" },
+        { name: "AI/ML", slug: "ai-ml", description: "인공지능, 머신러닝 프로젝트" },
+        { name: "게임", slug: "game", description: "게임 개발 프로젝트" },
+        { name: "디자인", slug: "design", description: "UI/UX, 그래픽 디자인" },
+        { name: "데이터", slug: "data", description: "데이터 분석, 시각화" },
+        { name: "블록체인", slug: "blockchain", description: "블록체인, 암호화폐 관련" },
+        { name: "기타", slug: "etc", description: "기타 프로젝트" }
       ];
 
       const createdCategories = [];
@@ -34,6 +75,7 @@ export function registerRoutes(app: Express): Server {
           const newCategory = await storage.createCategory(category);
           createdCategories.push(newCategory);
         } catch (error) {
+          // Category might already exist, skip
           console.log(`Category "${category.name}" might already exist`);
         }
       }
@@ -46,17 +88,6 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error initializing categories:", error);
       res.status(500).json({ message: "Failed to initialize categories" });
-    }
-  });
-
-  // Categories
-  app.get('/api/categories', async (req, res) => {
-    try {
-      const categories = await storage.getCategories();
-      res.json(categories);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      res.status(500).json({ message: "Failed to fetch categories" });
     }
   });
 
@@ -235,8 +266,10 @@ export function registerRoutes(app: Express): Server {
   app.put('/api/comments/:id', isAuthenticated, async (req: any, res) => {
     try {
       const commentId = parseInt(req.params.id);
+      const userId = req.user.id;
       const { content } = req.body;
       
+      // TODO: Check if user owns the comment
       const comment = await storage.updateComment(commentId, content);
       if (!comment) {
         return res.status(404).json({ message: "Comment not found" });
@@ -252,7 +285,9 @@ export function registerRoutes(app: Express): Server {
   app.delete('/api/comments/:id', isAuthenticated, async (req: any, res) => {
     try {
       const commentId = parseInt(req.params.id);
+      const userId = req.user.id;
       
+      // TODO: Check if user owns the comment
       const success = await storage.deleteComment(commentId);
       if (!success) {
         return res.status(404).json({ message: "Comment not found" });
@@ -266,7 +301,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Feedback
-  app.get('/api/feedback', async (req, res) => {
+  app.get('/api/feedback', isAuthenticated, async (req, res) => {
     try {
       const feedback = await storage.getFeedback();
       res.json(feedback);
@@ -279,13 +314,17 @@ export function registerRoutes(app: Express): Server {
   app.post('/api/feedback', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
+      
       const feedbackData = insertFeedbackSchema.parse({
         ...req.body,
         authorId: userId,
       });
 
       const feedback = await storage.createFeedback(feedbackData);
-      res.status(201).json(feedback);
+      const feedbackWithAuthor = await storage.getFeedback();
+      const newFeedback = feedbackWithAuthor.find(f => f.id === feedback.id);
+      
+      res.status(201).json(newFeedback);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid feedback data", errors: error.errors });
@@ -301,12 +340,21 @@ export function registerRoutes(app: Express): Server {
       const userId = req.user.id;
       const { content, category } = req.body;
       
-      const feedback = await storage.updateFeedback(feedbackId, { content, category }, userId);
-      if (!feedback) {
-        return res.status(404).json({ message: "Feedback not found or unauthorized" });
+      if (!content || content.trim().length < 10) {
+        return res.status(400).json({ message: "피드백 내용을 최소 10자 이상 작성해주세요" });
+      }
+
+      if (!['bug', 'feature', 'other'].includes(category)) {
+        return res.status(400).json({ message: "올바른 카테고리를 선택해주세요" });
+      }
+
+      const updatedFeedback = await storage.updateFeedback(feedbackId, { content, category }, userId);
+      
+      if (!updatedFeedback) {
+        return res.status(404).json({ message: "피드백을 찾을 수 없거나 수정 권한이 없습니다" });
       }
       
-      res.json(feedback);
+      res.json(updatedFeedback);
     } catch (error) {
       console.error("Error updating feedback:", error);
       res.status(500).json({ message: "Failed to update feedback" });
@@ -319,25 +367,15 @@ export function registerRoutes(app: Express): Server {
       const userId = req.user.id;
       
       const success = await storage.deleteFeedback(feedbackId, userId);
+      
       if (!success) {
-        return res.status(404).json({ message: "Feedback not found or unauthorized" });
+        return res.status(404).json({ message: "피드백을 찾을 수 없거나 삭제 권한이 없습니다" });
       }
       
-      res.json({ message: "Feedback deleted successfully" });
+      res.json({ message: "피드백이 성공적으로 삭제되었습니다" });
     } catch (error) {
       console.error("Error deleting feedback:", error);
       res.status(500).json({ message: "Failed to delete feedback" });
-    }
-  });
-
-  // Visit tracking
-  app.post('/api/visit', async (req, res) => {
-    try {
-      const visit = await storage.recordVisit(req.body);
-      res.status(201).json(visit);
-    } catch (error) {
-      console.error("Error recording visit:", error);
-      res.status(500).json({ message: "Failed to record visit" });
     }
   });
 

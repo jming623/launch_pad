@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { isUnauthorizedError } from '@/lib/authUtils';
@@ -22,7 +23,9 @@ import {
   Calendar,
   User,
   Reply,
-  MoreHorizontal
+  MoreHorizontal,
+  Edit,
+  Trash2
 } from 'lucide-react';
 
 export default function ProjectDetail() {
@@ -117,6 +120,35 @@ export default function ProjectDetail() {
         title: "오류",
         description: "댓글 작성 중 오류가 발생했습니다.",
         variant: "destructive",
+      });
+    },
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('DELETE', `/api/projects/${id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: '프로젝트 삭제 완료',
+        description: '프로젝트가 성공적으로 삭제되었습니다.',
+      });
+      window.location.href = '/';
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "권한 없음",
+          description: "본인이 작성한 프로젝트만 삭제할 수 있습니다.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: '프로젝트 삭제 실패',
+        description: '프로젝트 삭제 중 오류가 발생했습니다.',
+        variant: 'destructive',
       });
     },
   });
@@ -306,6 +338,45 @@ export default function ProjectDetail() {
                 <Share2 className="w-4 h-4 mr-2" />
                 공유
               </Button>
+              
+              {/* Edit/Delete buttons for project owner */}
+              {isAuthenticated && user?.id === project.authorId && (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => window.location.href = `/projects/${id}/edit`}
+                  >
+                    <Edit className="w-4 h-4 mr-1" />
+                    수정
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        삭제
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>프로젝트 삭제</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          정말로 이 프로젝트를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>취소</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => deleteProjectMutation.mutate()}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          삭제하기
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
+              )}
             </div>
           </div>
         </div>
