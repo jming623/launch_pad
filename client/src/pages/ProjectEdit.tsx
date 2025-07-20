@@ -1,46 +1,48 @@
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import React, { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Upload, Camera } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import type { ProjectWithDetails, Category } from "@shared/schema";
+import { insertProjectSchema } from "@shared/schema";
+import { Upload, ImageIcon, Link, Mail, ArrowLeft } from "lucide-react";
+import type { ProjectWithDetails } from "@shared/schema";
 
-const projectEditSchema = z.object({
-  title: z.string().min(1, "제목을 입력해주세요").min(3, "제목은 3글자 이상이어야 합니다"),
-  description: z.string().min(1, "설명을 입력해주세요").min(10, "설명은 10글자 이상이어야 합니다"),
-  categoryId: z.number().min(1, "카테고리를 선택해주세요"),
-  imageUrl: z.string().optional(),
-  videoUrl: z.string().url("올바른 URL 형식이 아닙니다").optional().or(z.literal("")),
-  demoUrl: z.string().url("올바른 URL 형식이 아닙니다").optional().or(z.literal("")),
-  githubUrl: z.string().url("올바른 URL 형식이 아닙니다").optional().or(z.literal("")),
-  techStack: z.string().optional(),
+const projectFormSchema = insertProjectSchema.omit({ 
+  authorId: true,
+  id: true,
+  viewCount: true,
+  likeCount: true,
+  commentCount: true,
+  isActive: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  categoryId: z.number().min(1, '카테고리를 선택해주세요'),
 });
 
-type ProjectEditForm = z.infer<typeof projectEditSchema>;
+type ProjectFormData = z.infer<typeof projectFormSchema>;
 
 export default function ProjectEdit() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ['/api/projects', id],
@@ -51,48 +53,44 @@ export default function ProjectEdit() {
     },
   });
 
-  const { data: categories = [] } = useQuery({
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ['/api/categories'],
-    queryFn: async () => {
-      const response = await fetch('/api/categories');
-      if (!response.ok) throw new Error('Failed to fetch categories');
-      return response.json() as Category[];
-    },
+    enabled: isAuthenticated,
   });
 
-  const form = useForm<ProjectEditForm>({
-    resolver: zodResolver(projectEditSchema),
+  const form = useForm<ProjectFormData>({
+    resolver: zodResolver(projectFormSchema),
     defaultValues: {
-      title: "",
-      description: "",
+      title: '',
+      description: '',
+      content: '',
+      imageUrl: '',
+      videoUrl: '',
+      demoUrl: '',
+      contactInfo: '',
       categoryId: 0,
-      imageUrl: "",
-      videoUrl: "",
-      demoUrl: "",
-      githubUrl: "",
-      techStack: "",
     },
   });
 
   // Set form values when project data is loaded
-  React.useEffect(() => {
+  useEffect(() => {
     if (project) {
       form.reset({
         title: project.title,
         description: project.description,
+        content: project.content || '',
+        imageUrl: project.imageUrl || '',
+        videoUrl: project.videoUrl || '',
+        demoUrl: project.demoUrl || '',
+        contactInfo: project.contactInfo || '',
         categoryId: project.categoryId,
-        imageUrl: project.imageUrl || "",
-        videoUrl: project.videoUrl || "",
-        demoUrl: project.demoUrl || "",
-        githubUrl: project.githubUrl || "",
-        techStack: project.techStack || "",
       });
-      setImagePreview(project.imageUrl || "");
+      setImagePreview(project.imageUrl || '');
     }
   }, [project, form]);
 
   const updateProjectMutation = useMutation({
-    mutationFn: async (data: ProjectEditForm) => {
+    mutationFn: async (data: ProjectFormData) => {
       const response = await apiRequest('PUT', `/api/projects/${id}`, data);
       return response.json();
     },
@@ -100,29 +98,62 @@ export default function ProjectEdit() {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       queryClient.invalidateQueries({ queryKey: ['/api/projects', id] });
       toast({
-        title: "프로젝트 수정 완료",
+        title: "프로젝트 수정 완료!",
         description: "프로젝트가 성공적으로 수정되었습니다.",
       });
       setLocation(`/projects/${id}`);
     },
     onError: (error) => {
+      console.error('Project update error:', error);
       if (isUnauthorizedError(error)) {
         toast({
-          title: "권한 없음",
-          description: "본인이 작성한 프로젝트만 수정할 수 있습니다.",
+          title: "로그인 필요",
+          description: "다시 로그인해주세요.",
           variant: "destructive",
         });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
         return;
       }
       toast({
         title: "수정 실패",
-        description: "프로젝트 수정 중 오류가 발생했습니다.",
+        description: `프로젝트 수정 중 오류가 발생했습니다: ${error.message}`,
         variant: "destructive",
       });
     },
   });
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const onSubmit = (data: ProjectFormData) => {
+    console.log('Form data submitted:', data);
+    console.log('Form errors:', form.formState.errors);
+    
+    // Ensure categoryId is valid
+    if (!data.categoryId || data.categoryId === 0) {
+      toast({
+        title: "카테고리 선택 필요",
+        description: "프로젝트 카테고리를 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Convert categoryId to number if it's a string
+    const processedData = {
+      ...data,
+      categoryId: typeof data.categoryId === 'string' ? parseInt(data.categoryId) : data.categoryId,
+    };
+    
+    console.log('Processed data:', processedData);
+    updateProjectMutation.mutate(processedData);
+  };
+
+  const handleImageUrlChange = (url: string) => {
+    form.setValue('imageUrl', url);
+    setImagePreview(url);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -146,35 +177,38 @@ export default function ProjectEdit() {
       return;
     }
 
-    // Convert to base64 for storage (in production, upload to cloud storage)
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      setImagePreview(result);
-      form.setValue('imageUrl', result);
-    };
-    reader.readAsDataURL(file);
+    setIsUploading(true);
+    
+    try {
+      // Create a FormData object for file upload
+      const formData = new FormData();
+      formData.append('image', file);
 
-    toast({
-      title: "이미지 업로드 완료",
-      description: "이미지가 성공적으로 업로드되었습니다.",
-    });
-  };
+      // Convert to base64 for storage (in production, upload to cloud storage)
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setImagePreview(result);
+        form.setValue('imageUrl', result);
+      };
+      reader.readAsDataURL(file);
 
-  const onSubmit = (data: ProjectEditForm) => {
-    if (!isAuthenticated) {
       toast({
-        title: "로그인 필요",
-        description: "프로젝트를 수정하려면 로그인이 필요합니다.",
+        title: "이미지 업로드 완료",
+        description: "이미지가 성공적으로 업로드되었습니다.",
+      });
+    } catch (error) {
+      toast({
+        title: "업로드 실패",
+        description: "이미지 업로드 중 오류가 발생했습니다.",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setIsUploading(false);
     }
-
-    updateProjectMutation.mutate(data);
   };
 
-  if (projectLoading) {
+  if (authLoading || projectLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
         <Header />
@@ -227,7 +261,7 @@ export default function ProjectEdit() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
       <Header />
       
       <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -240,240 +274,231 @@ export default function ProjectEdit() {
             <ArrowLeft className="w-4 h-4 mr-2" />
             프로젝트로 돌아가기
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            프로젝트 수정
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            프로젝트 정보를 수정하세요
-          </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>프로젝트 정보</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">
+              프로젝트 수정
+            </CardTitle>
+            <p className="text-center text-gray-600 dark:text-gray-400">
+              프로젝트 정보를 수정하세요
+            </p>
           </CardHeader>
+          
           <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Title */}
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>프로젝트 제목 *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="프로젝트 제목을 입력하세요"
-                          {...field}
-                          className="text-base"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <form 
+              onSubmit={(e) => {
+                console.log('Form submit triggered!');
+                return form.handleSubmit(onSubmit)(e);
+              }} 
+              className="space-y-6"
+            >
+              {/* Project Title */}
+              <div className="space-y-2">
+                <Label htmlFor="title">프로젝트 제목 *</Label>
+                <Input
+                  id="title"
+                  placeholder="예: AI 기반 생산성 도구"
+                  {...form.register('title')}
                 />
+                {form.formState.errors.title && (
+                  <p className="text-sm text-red-500">{form.formState.errors.title.message}</p>
+                )}
+              </div>
 
-                {/* Description */}
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>프로젝트 설명 *</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="프로젝트에 대한 자세한 설명을 입력하세요"
-                          className="min-h-[120px] text-base resize-none"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              {/* Category */}
+              <div className="space-y-2">
+                <Label htmlFor="category">카테고리 *</Label>
+                <Select
+                  value={form.watch('categoryId')?.toString()}
+                  onValueChange={(value) => {
+                    const categoryId = parseInt(value);
+                    form.setValue('categoryId', categoryId);
+                    form.clearErrors('categoryId');
+                  }}
+                  disabled={categoriesLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="카테고리를 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories?.map((category: any) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.categoryId && (
+                  <p className="text-sm text-red-500">{form.formState.errors.categoryId.message}</p>
+                )}
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2">
+                <Label htmlFor="description">간단한 설명 *</Label>
+                <Textarea
+                  id="description"
+                  placeholder="프로젝트에 대한 간단한 설명을 작성하세요 (2-3줄 정도)"
+                  rows={3}
+                  {...form.register('description')}
                 />
+                {form.formState.errors.description && (
+                  <p className="text-sm text-red-500">{form.formState.errors.description.message}</p>
+                )}
+              </div>
 
-                {/* Category */}
-                <FormField
-                  control={form.control}
-                  name="categoryId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>카테고리 *</FormLabel>
-                      <FormControl>
-                        <Select 
-                          value={field.value.toString()} 
-                          onValueChange={(value) => field.onChange(parseInt(value))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="카테고리를 선택하세요" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories.map((category) => (
-                              <SelectItem key={category.id} value={category.id.toString()}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              {/* Detailed Content */}
+              <div className="space-y-2">
+                <Label htmlFor="content">상세 내용</Label>
+                <Textarea
+                  id="content"
+                  placeholder="프로젝트의 상세한 내용을 작성하세요 (기능, 특징, 사용 기술 등)"
+                  rows={6}
+                  {...form.register('content')}
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  선택사항입니다. 더 자세한 설명을 원한다면 작성하세요.
+                </p>
+              </div>
 
-                {/* Image Upload */}
-                <FormField
-                  control={form.control}
-                  name="imageUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>프로젝트 이미지</FormLabel>
-                      <div className="space-y-4">
-                        <FormControl>
-                          <Input
-                            placeholder="이미지 URL을 입력하거나 아래 버튼으로 파일을 업로드하세요"
-                            {...field}
-                            className="text-base"
-                            onChange={(e) => {
-                              field.onChange(e);
-                              setImagePreview(e.target.value);
-                            }}
-                          />
-                        </FormControl>
-                        
-                        <div className="flex items-center gap-4">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="flex items-center gap-2"
-                          >
-                            <Camera className="w-4 h-4" />
-                            파일 업로드
-                          </Button>
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={handleFileSelect}
-                            className="hidden"
-                          />
-                        </div>
-
-                        {imagePreview && (
-                          <div className="mt-4">
-                            <img
-                              src={imagePreview}
-                              alt="Preview"
-                              className="w-full max-w-md h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
-                            />
-                          </div>
-                        )}
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          이미지 URL을 입력하거나 📷 버튼을 클릭해서 파일을 업로드하세요 (500KB 이하)
-                        </p>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Video URL */}
-                <FormField
-                  control={form.control}
-                  name="videoUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>데모 비디오 URL</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="YouTube, Vimeo 등의 비디오 URL을 입력하세요"
-                          {...field}
-                          className="text-base"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Demo URL */}
-                <FormField
-                  control={form.control}
-                  name="demoUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>데모 사이트 URL</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="https://example.com"
-                          {...field}
-                          className="text-base"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* GitHub URL */}
-                <FormField
-                  control={form.control}
-                  name="githubUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>GitHub URL</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="https://github.com/username/repository"
-                          {...field}
-                          className="text-base"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Tech Stack */}
-                <FormField
-                  control={form.control}
-                  name="techStack"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>기술 스택</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="React, Node.js, TypeScript 등 (쉼표로 구분)"
-                          {...field}
-                          className="text-base"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex gap-4 pt-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setLocation(`/projects/${id}`)}
-                    className="flex-1"
-                  >
-                    취소
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={updateProjectMutation.isPending}
-                    className="flex-1"
-                  >
-                    {updateProjectMutation.isPending ? "수정 중..." : "수정하기"}
-                  </Button>
+              {/* Image URL */}
+              <div className="space-y-2">
+                <Label htmlFor="imageUrl">프로젝트 이미지</Label>
+                <div className="flex space-x-2">
+                  <div className="flex-1">
+                    <Input
+                      id="imageUrl"
+                      type="url"
+                      placeholder="https://example.com/image.jpg"
+                      {...form.register('imageUrl')}
+                      onChange={(e) => handleImageUrlChange(e.target.value)}
+                    />
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      disabled={isUploading}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      disabled={isUploading}
+                      className="relative"
+                    >
+                      {isUploading ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                      ) : (
+                        <Upload className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
-              </form>
-            </Form>
+                
+                {imagePreview && (
+                  <div className="mt-2">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-full max-w-md h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                    />
+                  </div>
+                )}
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  이미지 URL을 입력하거나 📁 버튼을 클릭해서 파일을 업로드하세요 (500KB 이하)
+                </p>
+              </div>
+
+              {/* Video URL */}
+              <div className="space-y-2">
+                <Label htmlFor="videoUrl">데모 비디오 URL</Label>
+                <div className="flex items-center space-x-2">
+                  <div className="flex-1">
+                    <Input
+                      id="videoUrl"
+                      type="url"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      {...form.register('videoUrl')}
+                    />
+                  </div>
+                  <Link className="h-4 w-4 text-gray-400" />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  선택사항입니다. YouTube, Vimeo 등의 비디오 링크를 추가하세요.
+                </p>
+              </div>
+
+              {/* Demo URL */}
+              <div className="space-y-2">
+                <Label htmlFor="demoUrl">데모 사이트 URL</Label>
+                <div className="flex items-center space-x-2">
+                  <div className="flex-1">
+                    <Input
+                      id="demoUrl"
+                      type="url"
+                      placeholder="https://my-awesome-project.vercel.app"
+                      {...form.register('demoUrl')}
+                    />
+                  </div>
+                  <ImageIcon className="h-4 w-4 text-gray-400" />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  선택사항입니다. 실제 작동하는 사이트가 있다면 링크를 추가하세요.
+                </p>
+              </div>
+
+              {/* Contact Info */}
+              <div className="space-y-2">
+                <Label htmlFor="contactInfo">연락처 정보</Label>
+                <div className="flex items-center space-x-2">
+                  <div className="flex-1">
+                    <Input
+                      id="contactInfo"
+                      placeholder="이메일, SNS, GitHub 등"
+                      {...form.register('contactInfo')}
+                    />
+                  </div>
+                  <Mail className="h-4 w-4 text-gray-400" />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  선택사항입니다. 프로젝트에 관심 있는 사람들이 연락할 수 있는 정보를 입력하세요.
+                </p>
+              </div>
+
+              {/* Submit Button */}
+              <div className="pt-6">
+                <Button
+                  type="submit"
+                  disabled={updateProjectMutation.isPending}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  {updateProjectMutation.isPending ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>수정 중...</span>
+                    </div>
+                  ) : (
+                    '프로젝트 수정하기'
+                  )}
+                </Button>
+              </div>
+              
+              <div className="text-center">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setLocation(`/projects/${id}`)}
+                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  취소
+                </Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </main>
