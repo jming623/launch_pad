@@ -348,7 +348,7 @@ export default function ProjectCreate() {
                   </div>
                 )}
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  이미지 URL을 입력하거나 📁 버튼을 클릭해서 파일을 업로드하세요 (500KB 이하)
+                  이미지 URL을 입력하거나 ⬆️ 버튼을 클릭해서 파일을 업로드하세요 (500KB 이하)
                 </p>
               </div>
 
