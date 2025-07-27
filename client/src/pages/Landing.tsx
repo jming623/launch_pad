@@ -21,13 +21,13 @@ export default function Landing() {
       timeframe: activeTab, 
       categoryId: selectedCategory,
       page: 1,
-      limit: 20 
+      limit: 5 
     }],
     queryFn: async () => {
       const params = new URLSearchParams({
         timeframe: activeTab,
         page: '1',
-        limit: '20',
+        limit: '5',
       });
       
       if (selectedCategory) {
@@ -38,8 +38,9 @@ export default function Landing() {
       if (!response.ok) throw new Error('Failed to fetch projects');
       return response.json();
     },
-    staleTime: 2 * 60 * 1000, // 2분 캐시 (홈페이지 preview)
-    gcTime: 5 * 60 * 1000, // 5분 가비지 컬렉션
+    staleTime: 0, // 캐시 없이 항상 최신 데이터 요청
+    gcTime: 0, // 즉시 가비지 컬렉션
+    refetchOnMount: true, // 마운트 시 항상 재요청
   });
 
   const { data: stats } = useQuery({

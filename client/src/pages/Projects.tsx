@@ -28,13 +28,13 @@ export default function Projects() {
       timeframe: activeTab, 
       categoryId: selectedCategory,
       page: 1,
-      limit: 20 
+      limit: 5 
     }],
     queryFn: async () => {
       const params = new URLSearchParams({
         timeframe: activeTab,
         page: '1',
-        limit: '20',
+        limit: '5',
       });
       
       if (selectedCategory) {
@@ -48,13 +48,14 @@ export default function Projects() {
       // Reset state when query changes
       setAllProjects(data);
       setCurrentPage(1);
-      setNoMoreProjects(data.length < 20);
+      setNoMoreProjects(data.length < 5);
       setHasTriedLoadMore(false); // Reset the flag when new data loads
       
       return data;
     },
-    staleTime: 1 * 60 * 1000, // 1분 캐시
-    gcTime: 5 * 60 * 1000, // 5분 가비지 컬렉션
+    staleTime: 0, // 캐시 없이 항상 최신 데이터 요청
+    gcTime: 0, // 즉시 가비지 컬렉션
+    refetchOnMount: true, // 마운트 시 항상 재요청
   });
 
   const loadMoreMutation = useMutation({
@@ -63,7 +64,7 @@ export default function Projects() {
       const params = new URLSearchParams({
         timeframe: activeTab,
         page: nextPage.toString(),
-        limit: '20',
+        limit: '5',
       });
       
       if (selectedCategory) {
@@ -81,7 +82,7 @@ export default function Projects() {
       } else {
         setAllProjects(prev => [...prev, ...newProjects]);
         setCurrentPage(prev => prev + 1);
-        if (newProjects.length < 20) {
+        if (newProjects.length < 5) {
           setNoMoreProjects(true);
         }
       }
