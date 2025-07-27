@@ -1,102 +1,29 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { ProjectCard } from '@/components/ProjectCard';
 import { RankingTabs } from '@/components/RankingTabs';
 import { Sidebar } from '@/components/Sidebar';
-import { Card, CardContent } from '@/components/ui/card';
+import { ProjectList } from '@/components/ProjectList';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import type { ProjectWithDetails } from '@shared/schema';
-import { Plus, Loader2 } from 'lucide-react';
+import { useProjectPagination } from '@/hooks/useProjectPagination';
+import { Plus } from 'lucide-react';
 import { Link } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function Projects() {
   const { isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState<'today' | 'weekly' | 'monthly' | 'all'>('all');
-  const [selectedCategory, setSelectedCategory] = useState<number | undefined>();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [allProjects, setAllProjects] = useState<ProjectWithDetails[]>([]);
-  const [noMoreProjects, setNoMoreProjects] = useState(false);
-  const [hasTriedLoadMore, setHasTriedLoadMore] = useState(false); // Track if user has tried loading more
-  const queryClient = useQueryClient();
-
-  const { data: projects, isLoading: projectsLoading } = useQuery({
-    queryKey: ['/api/projects', { 
-      timeframe: activeTab, 
-      categoryId: selectedCategory,
-      page: 1,
-      limit: 5 
-    }],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-        timeframe: activeTab,
-        page: '1',
-        limit: '5',
-      });
-      
-      if (selectedCategory) {
-        params.set('categoryId', selectedCategory.toString());
-      }
-      
-      const response = await fetch(`/api/projects?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch projects');
-      const data = await response.json();
-      
-      // Reset state when query changes
-      setAllProjects(data);
-      setCurrentPage(1);
-      setNoMoreProjects(data.length < 5); // Hide button if initial load has less than limit
-      setHasTriedLoadMore(false); // Reset the flag when new data loads
-      
-      return data;
-    },
-    staleTime: 0, // 캐시 없이 항상 최신 데이터 요청
-    gcTime: 0, // 즉시 가비지 컬렉션
-    refetchOnMount: true, // 마운트 시 항상 재요청
-  });
-
-  const loadMoreMutation = useMutation({
-    mutationFn: async () => {
-      const nextPage = currentPage + 1;
-      const params = new URLSearchParams({
-        timeframe: activeTab,
-        page: nextPage.toString(),
-        limit: '5',
-      });
-      
-      if (selectedCategory) {
-        params.set('categoryId', selectedCategory.toString());
-      }
-      
-      const response = await fetch(`/api/projects?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch more projects');
-      return response.json();
-    },
-    onSuccess: (newProjects: ProjectWithDetails[]) => {
-      setHasTriedLoadMore(true); // Mark that user has tried loading more
-      if (newProjects.length === 0) {
-        setNoMoreProjects(true);
-      } else {
-        setAllProjects(prev => [...prev, ...newProjects]);
-        setCurrentPage(prev => prev + 1);
-        if (newProjects.length < 5) {
-          setNoMoreProjects(true);
-        }
-      }
-    },
-    onError: () => {
-      setHasTriedLoadMore(true); // Mark that user has tried loading more
-      setNoMoreProjects(true);
-    }
-  });
-
-  const handleLoadMore = () => {
-    if (loadMoreMutation.isPending) return; // Prevent double clicks
-    loadMoreMutation.mutate();
-  };
+  
+  const {
+    activeTab,
+    selectedCategory,
+    projects,
+    isLoading,
+    showLoadMoreButton,
+    showNoMoreMessage,
+    isLoadingMore,
+    setActiveTab,
+    setSelectedCategory,
+    handleLoadMore,
+  } = useProjectPagination({ defaultTimeframe: 'all' });
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
@@ -125,119 +52,46 @@ export default function Projects() {
         </div>
       </section>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="lg:grid lg:grid-cols-4 lg:gap-8">
+        <div className="lg:flex lg:space-x-8">
           {/* Sidebar */}
-          <div className="lg:col-span-1 mb-8 lg:mb-0">
+          <div className="lg:w-1/4">
             <Sidebar 
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
+              selectedCategory={selectedCategory} 
+              onCategoryChange={setSelectedCategory} 
             />
           </div>
           
-          {/* Main Content Area */}
-          <div className="lg:col-span-3">
+          {/* Main Content */}
+          <div className="lg:w-3/4 lg:mt-0 mt-8">
             {/* Ranking Tabs */}
-            <div className="mb-6">
-              <RankingTabs 
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-              />
-            </div>
+            <RankingTabs 
+              activeTab={activeTab} 
+              onTabChange={setActiveTab} 
+            />
             
-            {/* Project Grid */}
             <div className="space-y-6">
-              {projectsLoading ? (
-                <>
-                  {[...Array(6)].map((_, i) => (
-                    <Card key={i} className="overflow-hidden">
-                      <div className="md:flex">
-                        <div className="md:w-1/3">
-                          <Skeleton className="w-full h-48 md:h-full" />
-                        </div>
-                        <div className="md:w-2/3 p-6">
-                          <Skeleton className="h-6 w-24 mb-2" />
-                          <Skeleton className="h-6 w-full mb-2" />
-                          <Skeleton className="h-4 w-full mb-3" />
-                          <Skeleton className="h-4 w-3/4 mb-4" />
-                          <div className="flex items-center space-x-4">
-                            <Skeleton className="h-8 w-8 rounded-full" />
-                            <Skeleton className="h-4 w-24" />
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </>
-              ) : allProjects && allProjects.length > 0 ? (
-                <>
-                  {allProjects.map((project: ProjectWithDetails, index: number) => (
-                    <div key={project.id}>
-                      <ProjectCard project={project} rank={index + 1} />
-                      
-                      {/* Ad Card every 5th project */}
-                      {(index + 1) % 5 === 0 && (
-                        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700 border-blue-200 dark:border-slate-600 mt-6">
-                          <CardContent className="p-6 text-center">
-                            <div className="text-xs text-blue-600 dark:text-blue-400 mb-2">Sponsored</div>
-                            <div className="bg-white dark:bg-slate-700 rounded-lg p-8">
-                              <div className="text-3xl mb-4">📢</div>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">Google Advertisement</p>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-                  ))}
-                </>
-              ) : (
-                <Card className="p-12 text-center">
-                  <CardContent>
-                    <div className="text-6xl mb-4">🚀</div>
-                    <h3 className="text-xl font-semibold mb-2">아직 프로젝트가 없습니다</h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-6">
-                      첫 번째 프로젝트를 등록해보세요!
-                    </p>
-                    {isAuthenticated && (
-                      <Link href="/create">
-                        <Button className="bg-gradient-to-r from-primary to-violet-500 hover:from-primary/90 hover:to-violet-500/90">
-                          <Plus className="w-4 h-4 mr-2" />
-                          프로젝트 등록하기
-                        </Button>
-                      </Link>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-              
-              {/* Load More Button - Show only if there are projects and potentially more to load */}
-              {allProjects && allProjects.length > 0 && !noMoreProjects && (
-                <div className="text-center mt-8">
-                  <Button 
-                    variant="outline" 
-                    size="lg"
-                    onClick={handleLoadMore}
-                    disabled={loadMoreMutation.isPending}
-                  >
-                    {loadMoreMutation.isPending ? "로딩 중..." : "더 많은 프로젝트 보기"}
-                  </Button>
-                </div>
-              )}
-              
-              {/* No more projects message */}
-              {hasTriedLoadMore && noMoreProjects && allProjects.length > 0 && (
-                <div className="text-center mt-8">
-                  <p className="text-gray-500 dark:text-gray-400">
-                    모든 프로젝트를 확인했습니다
-                  </p>
-                </div>
-              )}
+              <ProjectList
+                projects={projects}
+                isLoading={isLoading}
+                selectedCategory={selectedCategory}
+                showLoadMoreButton={showLoadMoreButton}
+                showNoMoreMessage={showNoMoreMessage}
+                isLoadingMore={isLoadingMore}
+                onLoadMore={handleLoadMore}
+                isAuthenticated={isAuthenticated}
+                emptyStateConfig={{
+                  title: "프로젝트가 없습니다",
+                  description: "아직 등록된 프로젝트가 없습니다.",
+                  showCreateButton: true,
+                  createButtonText: "첫 번째 프로젝트 등록하기"
+                }}
+                adFrequency={3}
+              />
             </div>
           </div>
         </div>
       </main>
-
       <Footer />
     </div>
   );
