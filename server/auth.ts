@@ -244,30 +244,49 @@ export function setupAuth(app: Express) {
   // GitHub OAuth routes
   app.get("/api/auth/github", passport.authenticate("github", { scope: ["user:email"] }));
 
-  app.get("/api/auth/github/callback", 
-    passport.authenticate("github", { failureRedirect: "/auth?error=github_failed" }),
-    async (req, res) => {
-      // GitHub 로그인 성공
-      const user = req.user as SelectUser;
+  app.get("/api/auth/github/callback", (req, res, next) => {
+    console.log("=== GitHub callback started ===");
+    passport.authenticate("github", { 
+      failureRedirect: "/auth?error=github_failed"
+    }, async (err: any, user: any, info: any) => {
+      console.log("GitHub authenticate callback:", { err, user: user?.id, info });
       
-      console.log("GitHub callback - user:", {
-        id: user.id,
-        hasSetNickname: user.hasSetNickname,
-        email: user.email,
-        nickname: user.nickname
-      });
-      
-      // 닉네임 설정이 안된 경우 (신규 가입 또는 기존 사용자 중 닉네임 미설정)
-      if (!user.hasSetNickname) {
-        console.log("Redirecting to GitHub signup page");
-        res.redirect("/auth?github_signup=true");
-      } else {
-        console.log("Redirecting to home page");
-        // 기존 사용자 홈으로 리다이렉트
-        res.redirect("/");
+      if (err) {
+        console.error("GitHub auth error:", err);
+        return res.redirect("/auth?error=github_failed");
       }
-    }
-  );
+      
+      if (!user) {
+        console.log("No user returned from GitHub auth");
+        return res.redirect("/auth?error=github_failed");
+      }
+      
+      // 수동으로 로그인 처리
+      req.logIn(user, (loginErr) => {
+        if (loginErr) {
+          console.error("Login error:", loginErr);
+          return res.redirect("/auth?error=github_failed");
+        }
+        
+        console.log("GitHub callback - user logged in:", {
+          id: user.id,
+          hasSetNickname: user.hasSetNickname,
+          email: user.email,
+          nickname: user.nickname
+        });
+        
+        // 닉네임 설정이 안된 경우 (신규 가입 또는 기존 사용자 중 닉네임 미설정)
+        if (!user.hasSetNickname) {
+          console.log("Redirecting to GitHub signup page");
+          res.redirect("/auth?github_signup=true");
+        } else {
+          console.log("Redirecting to home page");
+          // 기존 사용자 홈으로 리다이렉트
+          res.redirect("/");
+        }
+      });
+    })(req, res, next);
+  });
 
   // GitHub 회원가입 완료 엔드포인트
   app.post("/api/auth/github/complete-signup", isAuthenticated, async (req, res) => {
