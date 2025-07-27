@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -8,11 +8,16 @@ import { Sidebar } from '@/components/Sidebar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2 } from 'lucide-react';
 import type { ProjectWithDetails } from '@shared/schema';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'today' | 'weekly' | 'monthly' | 'all'>('today');
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [allProjects, setAllProjects] = useState<ProjectWithDetails[]>([]);
+  const [noMoreProjects, setNoMoreProjects] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: projects, isLoading: projectsLoading } = useQuery({
     queryKey: ['/api/projects', { 
@@ -34,9 +39,54 @@ export default function Home() {
       
       const response = await fetch(`/api/projects?${params}`);
       if (!response.ok) throw new Error('Failed to fetch projects');
-      return response.json();
+      const data = await response.json();
+      
+      // Reset state when query changes
+      setAllProjects(data);
+      setCurrentPage(1);
+      setNoMoreProjects(data.length < 20);
+      
+      return data;
     },
   });
+
+  const loadMoreMutation = useMutation({
+    mutationFn: async () => {
+      const nextPage = currentPage + 1;
+      const params = new URLSearchParams({
+        timeframe: activeTab,
+        page: nextPage.toString(),
+        limit: '20',
+      });
+      
+      if (selectedCategory) {
+        params.set('categoryId', selectedCategory.toString());
+      }
+      
+      const response = await fetch(`/api/projects?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch more projects');
+      return response.json();
+    },
+    onSuccess: (newProjects: ProjectWithDetails[]) => {
+      if (newProjects.length === 0) {
+        setNoMoreProjects(true);
+      } else {
+        setAllProjects(prev => [...prev, ...newProjects]);
+        setCurrentPage(prev => prev + 1);
+        if (newProjects.length < 20) {
+          setNoMoreProjects(true);
+        }
+      }
+    },
+    onError: () => {
+      setNoMoreProjects(true);
+    }
+  });
+
+  const handleLoadMore = () => {
+    setNoMoreProjects(false); // Reset message when user clicks again
+    loadMoreMutation.mutate();
+  };
 
   const { data: stats } = useQuery({
     queryKey: ['/api/stats'],
@@ -133,9 +183,9 @@ export default function Home() {
                     </Card>
                   ))}
                 </>
-              ) : projects && projects.length > 0 ? (
+              ) : allProjects && allProjects.length > 0 ? (
                 <>
-                  {projects.map((project: ProjectWithDetails, index: number) => (
+                  {allProjects.map((project: ProjectWithDetails, index: number) => (
                     <div key={project.id}>
                       <ProjectCard project={project} rank={index + 1} />
                       
@@ -173,10 +223,24 @@ export default function Home() {
               )}
               
               {/* Load More Button */}
-              {projects && projects.length > 0 && (
+              {allProjects && allProjects.length > 0 && !projectsLoading && (
                 <div className="text-center mt-8">
-                  <Button variant="outline" size="lg">
-                    더 많은 프로젝트 보기
+                  {noMoreProjects && !loadMoreMutation.isPending && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                      더 이상 로드할 프로젝트가 없습니다.
+                    </p>
+                  )}
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    onClick={handleLoadMore}
+                    disabled={loadMoreMutation.isPending}
+                  >
+                    {loadMoreMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      '더 많은 프로젝트 보기'
+                    )}
                   </Button>
                 </div>
               )}
