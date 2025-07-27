@@ -90,7 +90,7 @@ export function setupAuth(app: Express) {
       {
         clientID: process.env.GITHUB_CLIENT_ID!,
         clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-        callbackURL: "/api/auth/github/callback",
+        callbackURL: "https://7a6b3a00-659c-47ae-a2fe-cba3cfcb9759-00-1mh0t6c0982p8.picard.replit.dev/api/auth/github/callback",
       },
       async (accessToken: string, refreshToken: string, profile: any, done: any) => {
         try {
