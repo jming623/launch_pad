@@ -454,26 +454,76 @@ export default function AuthPage() {
         </div>
 
         {/* Right side - Hero */}
-        <div className="hidden lg:flex flex-1 bg-gradient-to-br from-primary-50 to-violet-50 dark:from-slate-800 dark:to-slate-700 items-center justify-center p-8">
-          <div className="max-w-md text-center">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              AI 시대의 혁신적인 프로젝트들
+        <div className="hidden lg:flex flex-1 relative overflow-hidden bg-gradient-to-br from-primary-50 via-violet-50 to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700 items-center justify-center p-8">
+          {/* Animated Background Elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            {/* Floating Shapes */}
+            <div className="absolute top-20 left-10 w-20 h-20 bg-primary/10 rounded-full animate-pulse"></div>
+            <div className="absolute top-40 right-20 w-16 h-16 bg-violet-500/10 rounded-full animate-bounce" style={{ animationDelay: '1s', animationDuration: '3s' }}></div>
+            <div className="absolute bottom-32 left-16 w-12 h-12 bg-blue-500/10 rounded-full animate-pulse" style={{ animationDelay: '2s' }}></div>
+            <div className="absolute bottom-20 right-10 w-24 h-24 bg-orange-500/10 rounded-full animate-bounce" style={{ animationDelay: '0.5s', animationDuration: '4s' }}></div>
+            
+            {/* Gradient Orbs */}
+            <div className="absolute top-10 right-1/3 w-32 h-32 bg-gradient-to-r from-primary/20 to-violet-500/20 rounded-full blur-xl animate-pulse"></div>
+            <div className="absolute bottom-10 left-1/4 w-40 h-40 bg-gradient-to-r from-blue-500/20 to-primary/20 rounded-full blur-xl animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+            
+            {/* Grid Pattern */}
+            <div className="absolute inset-0 opacity-5 dark:opacity-10">
+              <div className="grid grid-cols-8 gap-4 h-full w-full">
+                {Array.from({ length: 64 }).map((_, i) => (
+                  <div key={i} className="border border-gray-400 dark:border-gray-600"></div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Geometric Shapes */}
+            <div className="absolute top-1/4 left-1/4 w-6 h-6 border-2 border-primary/30 rotate-45 animate-spin" style={{ animationDuration: '8s' }}></div>
+            <div className="absolute top-3/4 right-1/3 w-8 h-8 border-2 border-violet-500/30 rotate-12 animate-spin" style={{ animationDuration: '10s', animationDirection: 'reverse' }}></div>
+          </div>
+          
+          {/* Content */}
+          <div className="relative z-10 max-w-md text-center">
+            <div className="mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary to-violet-500 rounded-2xl mb-4 shadow-lg">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+            </div>
+            
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
+              AI 시대의 <span className="bg-gradient-to-r from-primary to-violet-500 bg-clip-text text-transparent">혁신적인 프로젝트들</span>
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
               개인 창작자들의 놀라운 아이디어와 창작물을 발견하고, 여러분의 프로젝트도 세상에 공유해보세요.
             </p>
+            
             <div className="space-y-4">
-              <div className="flex items-center justify-center space-x-2">
-                <div className="w-3 h-3 bg-primary rounded-full"></div>
-                <span className="text-gray-600 dark:text-gray-300">프로젝트 등록 및 홍보</span>
+              <div className="flex items-center justify-center space-x-3 p-3 rounded-lg bg-white/20 dark:bg-slate-800/30 backdrop-blur-sm">
+                <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-primary to-primary/80 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </div>
+                <span className="text-gray-700 dark:text-gray-200 font-medium">프로젝트 등록 및 홍보</span>
               </div>
-              <div className="flex items-center justify-center space-x-2">
-                <div className="w-3 h-3 bg-violet-500 rounded-full"></div>
-                <span className="text-gray-600 dark:text-gray-300">커뮤니티 피드백</span>
+              
+              <div className="flex items-center justify-center space-x-3 p-3 rounded-lg bg-white/20 dark:bg-slate-800/30 backdrop-blur-sm">
+                <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-violet-500 to-violet-400 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                  </svg>
+                </div>
+                <span className="text-gray-700 dark:text-gray-200 font-medium">커뮤니티 피드백</span>
               </div>
-              <div className="flex items-center justify-center space-x-2">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span className="text-gray-600 dark:text-gray-300">프로젝트 랭킹 시스템</span>
+              
+              <div className="flex items-center justify-center space-x-3 p-3 rounded-lg bg-white/20 dark:bg-slate-800/30 backdrop-blur-sm">
+                <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-400 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <span className="text-gray-700 dark:text-gray-200 font-medium">프로젝트 랭킹 시스템</span>
               </div>
             </div>
           </div>
