@@ -203,7 +203,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col">
       {/* Home Button */}
       <div className="absolute top-6 left-6 z-10">
         <Button
@@ -217,17 +217,19 @@ export default function AuthPage() {
         </Button>
       </div>
 
-      {/* Left side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-lg">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              런치패드에 오신 것을 환영합니다
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              혁신적인 프로젝트를 공유하고 발견하세요
-            </p>
-          </div>
+      {/* Main Content */}
+      <div className="flex-1 flex min-h-0">
+        {/* Left side - Form */}
+        <div className="flex-1 flex items-center justify-center p-8 pt-20 min-h-0">
+          <div className="w-full max-w-lg">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                런치패드에 오신 것을 환영합니다
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">
+                혁신적인 프로젝트를 공유하고 발견하세요
+              </p>
+            </div>
 
           <Tabs defaultValue="login" className="space-y-6">
             <TabsList className="grid w-full grid-cols-2">
@@ -448,30 +450,31 @@ export default function AuthPage() {
               </Card>
             </TabsContent>
           </Tabs>
+          </div>
         </div>
-      </div>
 
-      {/* Right side - Hero */}
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-primary-50 to-violet-50 dark:from-slate-800 dark:to-slate-700 items-center justify-center p-8">
-        <div className="max-w-md text-center">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            AI 시대의 혁신적인 프로젝트들
-          </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-            개인 창작자들의 놀라운 아이디어와 창작물을 발견하고, 여러분의 프로젝트도 세상에 공유해보세요.
-          </p>
-          <div className="space-y-4">
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-3 h-3 bg-primary rounded-full"></div>
-              <span className="text-gray-600 dark:text-gray-300">프로젝트 등록 및 홍보</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-3 h-3 bg-violet-500 rounded-full"></div>
-              <span className="text-gray-600 dark:text-gray-300">커뮤니티 피드백</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <span className="text-gray-600 dark:text-gray-300">프로젝트 랭킹 시스템</span>
+        {/* Right side - Hero */}
+        <div className="hidden lg:flex flex-1 bg-gradient-to-br from-primary-50 to-violet-50 dark:from-slate-800 dark:to-slate-700 items-center justify-center p-8">
+          <div className="max-w-md text-center">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+              AI 시대의 혁신적인 프로젝트들
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
+              개인 창작자들의 놀라운 아이디어와 창작물을 발견하고, 여러분의 프로젝트도 세상에 공유해보세요.
+            </p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-3 h-3 bg-primary rounded-full"></div>
+                <span className="text-gray-600 dark:text-gray-300">프로젝트 등록 및 홍보</span>
+              </div>
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-3 h-3 bg-violet-500 rounded-full"></div>
+                <span className="text-gray-600 dark:text-gray-300">커뮤니티 피드백</span>
+              </div>
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span className="text-gray-600 dark:text-gray-300">프로젝트 랭킹 시스템</span>
+              </div>
             </div>
           </div>
         </div>
