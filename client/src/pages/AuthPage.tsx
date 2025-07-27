@@ -252,7 +252,8 @@ export default function AuthPage() {
     githubSignupMutation.mutate(data);
   };
 
-  if (isAuthenticated) {
+  // GitHub 회원가입 모드가 아닐 때만 리다이렉트
+  if (isAuthenticated && !isGithubSignup) {
     return null; // Will redirect
   }
 
