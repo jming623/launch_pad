@@ -45,7 +45,7 @@ export default function Home() {
       // Reset state when query changes
       setAllProjects(data);
       setCurrentPage(1);
-      setNoMoreProjects(data.length < 5);
+      setNoMoreProjects(false); // Always show button initially
       setHasTriedLoadMore(false); // Reset the flag when new data loads
       
       return data;
@@ -231,8 +231,8 @@ export default function Home() {
                 </Card>
               )}
               
-              {/* Load More Button */}
-              {allProjects && allProjects.length > 0 && !noMoreProjects && !hasTriedLoadMore && (
+              {/* Load More Button - Always show unless explicitly confirmed no more projects */}
+              {!noMoreProjects && (
                 <div className="text-center mt-8">
                   <Button 
                     variant="outline" 
