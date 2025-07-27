@@ -38,10 +38,14 @@ export default function Landing() {
       if (!response.ok) throw new Error('Failed to fetch projects');
       return response.json();
     },
+    staleTime: 2 * 60 * 1000, // 2분 캐시 (홈페이지 preview)
+    gcTime: 5 * 60 * 1000, // 5분 가비지 컬렉션
   });
 
   const { data: stats } = useQuery({
     queryKey: ['/api/stats'],
+    staleTime: 5 * 60 * 1000, // 5분 캐시 (stats는 자주 변하지 않음)
+    gcTime: 10 * 60 * 1000, // 10분 가비지 컬렉션
   });
 
   return (
@@ -74,25 +78,25 @@ export default function Landing() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div className="text-center">
               <div className="text-2xl md:text-3xl font-bold text-primary">
-                {stats?.totalProjects?.toLocaleString() || 0}
+                {(stats as any)?.totalProjects?.toLocaleString() || 0}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">등록된 프로젝트</div>
             </div>
             <div className="text-center">
               <div className="text-2xl md:text-3xl font-bold text-primary">
-                {stats?.totalUsers?.toLocaleString() || 0}
+                {(stats as any)?.totalUsers?.toLocaleString() || 0}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">활성 사용자</div>
             </div>
             <div className="text-center">
               <div className="text-2xl md:text-3xl font-bold text-primary">
-                {stats?.todayVisits?.toLocaleString() || 0}
+                {(stats as any)?.todayVisits?.toLocaleString() || 0}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">일일 방문자수</div>
             </div>
             <div className="text-center">
               <div className="text-2xl md:text-3xl font-bold text-primary">
-                {stats?.totalLikes?.toLocaleString() || 0}
+                {(stats as any)?.totalLikes?.toLocaleString() || 0}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">총 좋아요</div>
             </div>

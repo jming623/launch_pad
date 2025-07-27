@@ -47,7 +47,8 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
+      staleTime: 30 * 1000, // 30초 기본 캐시
+      gcTime: 5 * 60 * 1000, // 5분 가비지 컬렉션
       retry: false,
     },
     mutations: {

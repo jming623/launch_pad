@@ -53,6 +53,8 @@ export default function Projects() {
       
       return data;
     },
+    staleTime: 1 * 60 * 1000, // 1분 캐시
+    gcTime: 5 * 60 * 1000, // 5분 가비지 컬렉션
   });
 
   const loadMoreMutation = useMutation({

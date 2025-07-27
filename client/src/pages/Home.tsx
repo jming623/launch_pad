@@ -50,6 +50,8 @@ export default function Home() {
       
       return data;
     },
+    staleTime: 1 * 60 * 1000, // 1분 캐시
+    gcTime: 5 * 60 * 1000, // 5분 가비지 컬렉션
   });
 
   const loadMoreMutation = useMutation({
@@ -94,6 +96,8 @@ export default function Home() {
 
   const { data: stats } = useQuery({
     queryKey: ['/api/stats'],
+    staleTime: 5 * 60 * 1000, // 5분 캐시 (stats는 자주 변하지 않음)
+    gcTime: 10 * 60 * 1000, // 10분 가비지 컬렉션
   });
 
   return (
@@ -116,25 +120,25 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
             <div className="text-center p-4 bg-white/50 dark:bg-slate-800/50 rounded-lg backdrop-blur-sm">
               <div className="text-xl md:text-2xl font-bold text-primary">
-                {stats?.totalProjects?.toLocaleString() || 0}
+                {(stats as any)?.totalProjects?.toLocaleString() || 0}
               </div>
               <div className="text-xs text-gray-600 dark:text-gray-400">프로젝트</div>
             </div>
             <div className="text-center p-4 bg-white/50 dark:bg-slate-800/50 rounded-lg backdrop-blur-sm">
               <div className="text-xl md:text-2xl font-bold text-primary">
-                {stats?.totalUsers?.toLocaleString() || 0}
+                {(stats as any)?.totalUsers?.toLocaleString() || 0}
               </div>
               <div className="text-xs text-gray-600 dark:text-gray-400">사용자</div>
             </div>
             <div className="text-center p-4 bg-white/50 dark:bg-slate-800/50 rounded-lg backdrop-blur-sm">
               <div className="text-xl md:text-2xl font-bold text-primary">
-                {stats?.todayVisits?.toLocaleString() || 0}
+                {(stats as any)?.todayVisits?.toLocaleString() || 0}
               </div>
               <div className="text-xs text-gray-600 dark:text-gray-400">일일 방문자</div>
             </div>
             <div className="text-center p-4 bg-white/50 dark:bg-slate-800/50 rounded-lg backdrop-blur-sm">
               <div className="text-xl md:text-2xl font-bold text-primary">
-                {stats?.totalLikes?.toLocaleString() || 0}
+                {(stats as any)?.totalLikes?.toLocaleString() || 0}
               </div>
               <div className="text-xs text-gray-600 dark:text-gray-400">좋아요</div>
             </div>
