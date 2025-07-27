@@ -212,25 +212,25 @@ export default function Projects() {
               )}
               
               {/* Load More Button */}
-              {allProjects && allProjects.length > 0 && !projectsLoading && (
+              {allProjects && allProjects.length > 0 && !noMoreProjects && !hasTriedLoadMore && (
                 <div className="text-center mt-8">
-                  {noMoreProjects && hasTriedLoadMore && !loadMoreMutation.isPending && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                      더 이상 로드할 프로젝트가 없습니다.
-                    </p>
-                  )}
                   <Button 
                     variant="outline" 
                     size="lg"
                     onClick={handleLoadMore}
                     disabled={loadMoreMutation.isPending}
                   >
-                    {loadMoreMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      '더 많은 프로젝트 보기'
-                    )}
+                    {loadMoreMutation.isPending ? "로딩 중..." : "더 많은 프로젝트 보기"}
                   </Button>
+                </div>
+              )}
+              
+              {/* No more projects message */}
+              {hasTriedLoadMore && noMoreProjects && allProjects.length > 0 && (
+                <div className="text-center mt-8">
+                  <p className="text-gray-500 dark:text-gray-400">
+                    모든 프로젝트를 확인했습니다
+                  </p>
                 </div>
               )}
             </div>
