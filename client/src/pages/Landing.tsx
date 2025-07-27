@@ -7,9 +7,11 @@ import { RankingTabs } from '@/components/RankingTabs';
 import { Sidebar } from '@/components/Sidebar';
 import { ProjectList } from '@/components/ProjectList';
 import { useProjectPagination } from '@/hooks/useProjectPagination';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Landing() {
   const [, setLocation] = useLocation();
+  const { isAuthenticated } = useAuth();
   
   const {
     activeTab,
@@ -115,12 +117,12 @@ export default function Landing() {
                 showNoMoreMessage={showNoMoreMessage}
                 isLoadingMore={isLoadingMore}
                 onLoadMore={handleLoadMore}
+                isAuthenticated={isAuthenticated}
                 emptyStateConfig={{
                   title: "프로젝트가 없습니다",
                   description: "첫 번째 프로젝트를 등록해보세요!",
-                  showCreateButton: false,
-                  createButtonText: "로그인하고 프로젝트 등록하기",
-                  createButtonAction: () => setLocation('/auth')
+                  showCreateButton: true,
+                  createButtonText: "첫 번째 프로젝트 등록하기"
                 }}
                 adFrequency={3}
               />
