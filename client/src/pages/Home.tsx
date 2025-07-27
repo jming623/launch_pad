@@ -17,6 +17,7 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [allProjects, setAllProjects] = useState<ProjectWithDetails[]>([]);
   const [noMoreProjects, setNoMoreProjects] = useState(false);
+  const [hasTriedLoadMore, setHasTriedLoadMore] = useState(false); // Track if user has tried loading more
   const queryClient = useQueryClient();
 
   const { data: projects, isLoading: projectsLoading } = useQuery({
@@ -45,6 +46,7 @@ export default function Home() {
       setAllProjects(data);
       setCurrentPage(1);
       setNoMoreProjects(data.length < 20);
+      setHasTriedLoadMore(false); // Reset the flag when new data loads
       
       return data;
     },
@@ -68,6 +70,7 @@ export default function Home() {
       return response.json();
     },
     onSuccess: (newProjects: ProjectWithDetails[]) => {
+      setHasTriedLoadMore(true); // Mark that user has tried loading more
       if (newProjects.length === 0) {
         setNoMoreProjects(true);
       } else {
@@ -79,13 +82,13 @@ export default function Home() {
       }
     },
     onError: () => {
+      setHasTriedLoadMore(true); // Mark that user has tried loading more
       setNoMoreProjects(true);
     }
   });
 
   const handleLoadMore = () => {
     if (loadMoreMutation.isPending) return; // Prevent double clicks
-    setNoMoreProjects(false); // Reset message when user clicks again
     loadMoreMutation.mutate();
   };
 
@@ -226,7 +229,7 @@ export default function Home() {
               {/* Load More Button */}
               {allProjects && allProjects.length > 0 && !projectsLoading && (
                 <div className="text-center mt-8">
-                  {noMoreProjects && !loadMoreMutation.isPending && (
+                  {noMoreProjects && hasTriedLoadMore && !loadMoreMutation.isPending && (
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                       더 이상 로드할 프로젝트가 없습니다.
                     </p>

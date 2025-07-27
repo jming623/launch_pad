@@ -6,11 +6,11 @@ export function useAuth() {
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
-    refetchOnWindowFocus: true, // 브라우저 포커스 시 재검증
-    refetchOnMount: true, // 마운트 시 재검증
-    refetchOnReconnect: true, // 재연결 시 재검증
-    staleTime: 0, // 캐시 무효화로 항상 최신 상태 확인
-    gcTime: 0, // 가비지 컬렉션 시간 0으로 설정
+    refetchOnWindowFocus: false, // 포커스 시 재검증 비활성화
+    refetchOnMount: false, // 마운트 시 재검증 비활성화 (첫 로드만)
+    refetchOnReconnect: false, // 재연결 시 재검증 비활성화
+    staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
+    gcTime: 10 * 60 * 1000, // 10분간 가비지 컬렉션 보류
   });
 
   return {
