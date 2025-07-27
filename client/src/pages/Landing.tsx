@@ -65,7 +65,7 @@ export default function Landing() {
                 지금 시작하기
               </Button>
               <Button variant="outline" size="lg" asChild>
-                <Link href="#projects">프로젝트 둘러보기</Link>
+                <Link href="/projects">프로젝트 둘러보기</Link>
               </Button>
             </div>
           </div>

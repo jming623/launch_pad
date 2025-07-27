@@ -84,6 +84,7 @@ export default function Home() {
   });
 
   const handleLoadMore = () => {
+    if (loadMoreMutation.isPending) return; // Prevent double clicks
     setNoMoreProjects(false); // Reset message when user clicks again
     loadMoreMutation.mutate();
   };
