@@ -74,7 +74,7 @@ export default function Landing() {
             </div>
             <div className="text-center p-4 bg-white/50 dark:bg-slate-800/50 rounded-lg backdrop-blur-sm">
               <div className="text-xl md:text-2xl font-bold text-orange-600">
-                {(stats as any)?.todayVisitors?.toLocaleString() || 0}
+                {(stats as any)?.todayVisits?.toLocaleString() || 0}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">오늘 방문자</div>
             </div>

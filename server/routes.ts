@@ -19,6 +19,32 @@ export function registerRoutes(app: Express): Server {
   // Set up authentication
   setupAuth(app);
 
+  // Visitor tracking middleware
+  app.use(async (req, res, next) => {
+    try {
+      // Only track visits to main pages, not API calls or assets
+      if (!req.path.startsWith('/api') && 
+          !req.path.startsWith('/uploads') && 
+          !req.path.includes('.') && // Skip static files
+          req.method === 'GET') {
+        
+        const sessionId = req.sessionID || req.ip; // Use session ID or IP as fallback
+        const userAgent = req.get('User-Agent') || '';
+        const ipAddress = req.ip || req.connection.remoteAddress || '';
+
+        await storage.recordVisit({
+          sessionId,
+          userAgent,
+          ipAddress,
+          visitDate: new Date()
+        });
+      }
+    } catch (error) {
+      console.error('Error tracking visit:', error);
+    }
+    next();
+  });
+
   // Create uploads directory if it doesn't exist
   const uploadsDir = path.join(process.cwd(), 'uploads');
   if (!fs.existsSync(uploadsDir)) {
@@ -102,6 +128,17 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error fetching categories:", error);
       res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  // Stats endpoint
+  app.get('/api/stats', async (req, res) => {
+    try {
+      const stats = await storage.getStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+      res.status(500).json({ message: "Failed to fetch stats" });
     }
   });
 
