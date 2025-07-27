@@ -74,10 +74,10 @@ export function RankingTabs({
         </TabsList>
       </Tabs>
 
-      {/* Category Filter Dropdown */}
+      {/* Category Filter Dropdown - Only visible on mobile when sidebar is hidden */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="flex items-center space-x-2 whitespace-nowrap">
+          <Button variant="outline" size="sm" className="lg:hidden flex items-center space-x-2 whitespace-nowrap">
             <Filter className="w-4 h-4" />
             <span className="hidden sm:inline">{selectedCategoryName}</span>
             <span className="sm:hidden">필터</span>
