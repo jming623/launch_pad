@@ -1,5 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
+import { Strategy as GitHubStrategy } from "passport-github2";
 import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
@@ -58,6 +59,7 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Local Strategy
   passport.use(
     new LocalStrategy(
       { usernameField: "email" },
@@ -76,6 +78,61 @@ export function setupAuth(app: Express) {
           return done(null, user);
         } catch (error) {
           console.error("Login error:", error);
+          return done(error);
+        }
+      }
+    )
+  );
+
+  // GitHub Strategy
+  passport.use(
+    new GitHubStrategy(
+      {
+        clientID: process.env.GITHUB_CLIENT_ID!,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+        callbackURL: "/api/auth/github/callback",
+      },
+      async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+        try {
+          console.log("GitHub profile:", profile);
+          
+          // GitHub에서 받은 사용자 정보
+          const githubId = profile.id;
+          const email = profile.emails?.[0]?.value;
+          const displayName = profile.displayName || profile.username;
+          const profileImageUrl = profile.photos?.[0]?.value;
+
+          // 기존 GitHub 계정으로 가입한 사용자 찾기
+          let user = await storage.getUserByProviderAndId("github", githubId);
+          
+          if (user) {
+            // 기존 사용자 로그인
+            return done(null, user);
+          }
+
+          // 같은 이메일로 가입한 사용자가 있는지 확인
+          if (email) {
+            const existingUser = await storage.getUserByEmail(email);
+            if (existingUser) {
+              // 기존 계정에 GitHub 연동
+              const updatedUser = await storage.linkSocialAccount(existingUser.id, "github", githubId, profileImageUrl);
+              return done(null, updatedUser);
+            }
+          }
+
+          // 새 사용자 생성
+          const newUser = await storage.createUser({
+            id: `github_${githubId}_${Date.now()}`,
+            email: email || null,
+            provider: "github",
+            providerId: githubId,
+            profileImageUrl,
+            hasSetNickname: false,
+          });
+
+          return done(null, newUser);
+        } catch (error) {
+          console.error("GitHub OAuth error:", error);
           return done(error);
         }
       }
@@ -183,6 +240,24 @@ export function setupAuth(app: Express) {
   
   app.post("/api/logout", logoutHandler);
   app.get("/api/logout", logoutHandler);
+
+  // GitHub OAuth routes
+  app.get("/api/auth/github", passport.authenticate("github", { scope: ["user:email"] }));
+
+  app.get("/api/auth/github/callback", 
+    passport.authenticate("github", { failureRedirect: "/auth?error=github_failed" }),
+    (req, res) => {
+      // GitHub 로그인 성공
+      const user = req.user as SelectUser;
+      if (!user.hasSetNickname) {
+        // 닉네임 설정이 필요한 경우
+        res.redirect("/nickname");
+      } else {
+        // 홈으로 리다이렉트
+        res.redirect("/");
+      }
+    }
+  );
 
   // Login page - redirect to frontend auth page
   app.get("/api/login", (req, res) => {

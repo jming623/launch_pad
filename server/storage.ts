@@ -33,9 +33,11 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByNickname(nickname: string): Promise<User | undefined>;
+  getUserByProviderAndId(provider: string, providerId: string): Promise<User | undefined>;
   createUser(user: UpsertUser): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserProfile(id: string, data: { nickname?: string; profileImageUrl?: string }): Promise<User | undefined>;
+  linkSocialAccount(userId: string, provider: string, providerId: string, profileImageUrl?: string): Promise<User>;
   
   // Category operations
   getCategories(): Promise<Category[]>;
@@ -130,6 +132,32 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date(),
         },
       })
+      .returning();
+    return user;
+  }
+
+  async getUserByProviderAndId(provider: string, providerId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(
+      and(eq(users.provider, provider), eq(users.providerId, providerId))
+    );
+    return user;
+  }
+
+  async linkSocialAccount(userId: string, provider: string, providerId: string, profileImageUrl?: string): Promise<User> {
+    const updateData: any = {
+      provider,
+      providerId,
+      updatedAt: new Date()
+    };
+    
+    if (profileImageUrl) {
+      updateData.profileImageUrl = profileImageUrl;
+    }
+
+    const [user] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
       .returning();
     return user;
   }

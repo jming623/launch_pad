@@ -24,14 +24,14 @@ npm install passport-github2 @types/passport-github2
 
 **개발 환경 설정:**
 ```
-Application name: 프로젝트헌터
+Application name: launchpad
 Homepage URL: https://workspace--5000--jming95623.local-credentialless.webcontainer.io
 Authorization callback URL: https://workspace--5000--jming95623.local-credentialless.webcontainer.io/api/auth/github/callback
 ```
 
 **배포 환경 설정 (배포 후 변경):**
 ```
-Application name: 프로젝트헌터
+Application name: launchpad
 Homepage URL: https://your-app-name.replit.app
 Authorization callback URL: https://your-app-name.replit.app/api/auth/github/callback
 ```
