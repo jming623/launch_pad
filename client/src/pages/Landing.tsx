@@ -56,8 +56,8 @@ export default function Landing() {
             </div>
           </div>
           
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Quick Stats - Hidden on mobile */}
+          <div className="hidden lg:grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-4 bg-white/50 dark:bg-slate-800/50 rounded-lg backdrop-blur-sm">
               <div className="text-xl md:text-2xl font-bold text-primary">
                 {(stats as any)?.totalProjects?.toLocaleString() || 0}
@@ -88,8 +88,8 @@ export default function Landing() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="lg:flex lg:space-x-8">
-          {/* Sidebar */}
-          <div className="lg:w-1/4">
+          {/* Sidebar - Hidden on mobile */}
+          <div className="hidden lg:block lg:w-1/4">
             <Sidebar 
               selectedCategory={selectedCategory} 
               onCategoryChange={setSelectedCategory} 
@@ -97,11 +97,13 @@ export default function Landing() {
           </div>
           
           {/* Main Content */}
-          <div className="lg:w-3/4 lg:mt-0 mt-8">
-            {/* Ranking Tabs */}
+          <div className="lg:w-3/4">
+            {/* Ranking Tabs with Category Filter */}
             <RankingTabs 
               activeTab={activeTab} 
-              onTabChange={setActiveTab} 
+              onTabChange={setActiveTab}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
             />
             
             <div className="space-y-6">
