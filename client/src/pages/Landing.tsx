@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,6 +15,11 @@ export default function Landing() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<'today' | 'weekly' | 'monthly' | 'all'>('today');
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [allProjects, setAllProjects] = useState<ProjectWithDetails[]>([]);
+  const [noMoreProjects, setNoMoreProjects] = useState(false);
+  const [hasTriedLoadMore, setHasTriedLoadMore] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: projects, isLoading: projectsLoading } = useQuery({
     queryKey: ['/api/projects', { 
@@ -36,12 +41,60 @@ export default function Landing() {
       
       const response = await fetch(`/api/projects?${params}`);
       if (!response.ok) throw new Error('Failed to fetch projects');
-      return response.json();
+      const data = await response.json();
+      
+      // Reset state when query changes
+      setAllProjects(data);
+      setCurrentPage(1);
+      setNoMoreProjects(data.length < 5);
+      setHasTriedLoadMore(false);
+      
+      return data;
     },
     staleTime: 0, // 캐시 없이 항상 최신 데이터 요청
     gcTime: 0, // 즉시 가비지 컬렉션
     refetchOnMount: true, // 마운트 시 항상 재요청
   });
+
+  const loadMoreMutation = useMutation({
+    mutationFn: async () => {
+      const nextPage = currentPage + 1;
+      const params = new URLSearchParams({
+        timeframe: activeTab,
+        page: nextPage.toString(),
+        limit: '5',
+      });
+      
+      if (selectedCategory) {
+        params.set('categoryId', selectedCategory.toString());
+      }
+      
+      const response = await fetch(`/api/projects?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch more projects');
+      return response.json();
+    },
+    onSuccess: (newProjects: ProjectWithDetails[]) => {
+      setHasTriedLoadMore(true);
+      if (newProjects.length === 0) {
+        setNoMoreProjects(true);
+      } else {
+        setAllProjects(prev => [...prev, ...newProjects]);
+        setCurrentPage(prev => prev + 1);
+        if (newProjects.length < 5) {
+          setNoMoreProjects(true);
+        }
+      }
+    },
+    onError: () => {
+      setHasTriedLoadMore(true);
+      setNoMoreProjects(true);
+    }
+  });
+
+  const handleLoadMore = () => {
+    if (loadMoreMutation.isPending) return;
+    loadMoreMutation.mutate();
+  };
 
   const { data: stats } = useQuery({
     queryKey: ['/api/stats'],
@@ -149,9 +202,9 @@ export default function Landing() {
                     </Card>
                   ))}
                 </>
-              ) : projects && projects.length > 0 ? (
+              ) : allProjects && allProjects.length > 0 ? (
                 <>
-                  {projects.map((project: ProjectWithDetails, index: number) => (
+                  {allProjects.map((project: ProjectWithDetails, index: number) => (
                     <div key={project.id}>
                       <ProjectCard project={project} rank={index + 1} />
                       
@@ -191,11 +244,25 @@ export default function Landing() {
               )}
               
               {/* Load More Button */}
-              {projects && projects.length > 0 && (
+              {allProjects && allProjects.length > 0 && !noMoreProjects && !hasTriedLoadMore && (
                 <div className="text-center mt-8">
-                  <Button variant="outline" size="lg">
-                    더 많은 프로젝트 보기
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    onClick={handleLoadMore}
+                    disabled={loadMoreMutation.isPending}
+                  >
+                    {loadMoreMutation.isPending ? "로딩 중..." : "더 많은 프로젝트 보기"}
                   </Button>
+                </div>
+              )}
+              
+              {/* No more projects message */}
+              {hasTriedLoadMore && noMoreProjects && allProjects.length > 0 && (
+                <div className="text-center mt-8">
+                  <p className="text-gray-500 dark:text-gray-400">
+                    모든 프로젝트를 확인했습니다
+                  </p>
                 </div>
               )}
             </div>

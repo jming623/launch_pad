@@ -89,10 +89,8 @@ export function Header() {
         title: '로그아웃 완료',
         description: '성공적으로 로그아웃되었습니다.',
       });
-      // 페이지 강제 새로고침으로 캐시 완전 초기화
-      setTimeout(() => {
-        window.location.replace('/'); // replace로 히스토리 스택 제거
-      }, 500);
+      // 새로고침 없이 바로 Landing 페이지로 리다이렉트
+      window.location.href = '/';
     },
     onError: (error: Error) => {
       toast({
