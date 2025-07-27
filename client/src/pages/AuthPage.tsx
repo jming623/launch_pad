@@ -28,8 +28,14 @@ const registerSchema = z.object({
     .regex(/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*(),.?":{}|<>])/, '영문, 숫자, 특수문자를 각각 포함해야 합니다'),
 });
 
+const githubSignupSchema = z.object({
+  email: z.string().email('유효한 이메일을 입력해주세요'),
+  nickname: z.string().min(2, '닉네임은 최소 2자 이상이어야 합니다'),
+});
+
 type LoginData = z.infer<typeof loginSchema>;
 type RegisterData = z.infer<typeof registerSchema>;
+type GithubSignupData = z.infer<typeof githubSignupSchema>;
 
 export default function AuthPage() {
   const [, setLocation] = useLocation();
@@ -38,6 +44,10 @@ export default function AuthPage() {
   const { isAuthenticated } = useAuth();
   const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [emailMessage, setEmailMessage] = useState('');
+  
+  // GitHub 회원가입 모드 감지
+  const urlParams = new URLSearchParams(window.location.search);
+  const isGithubSignup = urlParams.get('github_signup') === 'true';
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -59,6 +69,14 @@ export default function AuthPage() {
     defaultValues: {
       email: '',
       password: '',
+    },
+  });
+
+  const githubSignupForm = useForm<GithubSignupData>({
+    resolver: zodResolver(githubSignupSchema),
+    defaultValues: {
+      email: '',
+      nickname: '',
     },
   });
 
@@ -190,6 +208,38 @@ export default function AuthPage() {
     },
   });
 
+  const githubSignupMutation = useMutation({
+    mutationFn: async (data: GithubSignupData) => {
+      const response = await fetch('/api/auth/github/complete-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'GitHub signup completion failed');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (user) => {
+      queryClient.setQueryData(['/api/user'], user);
+      toast({
+        title: '회원가입 완료',
+        description: `환영합니다, ${user.nickname}님! GitHub 계정으로 가입이 완료되었습니다.`,
+      });
+      setLocation('/');
+    },
+    onError: (error: Error) => {
+      toast({
+        title: '회원가입 실패',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const onLogin = (data: LoginData) => {
     loginMutation.mutate(data);
   };
@@ -198,8 +248,104 @@ export default function AuthPage() {
     registerMutation.mutate(data);
   };
 
+  const onGithubSignup = (data: GithubSignupData) => {
+    githubSignupMutation.mutate(data);
+  };
+
   if (isAuthenticated) {
     return null; // Will redirect
+  }
+
+  // GitHub 회원가입 모드
+  if (isGithubSignup) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col">
+        {/* Home Button */}
+        <div className="absolute top-6 left-6 z-10">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLocation('/')}
+            className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>홈으로 돌아가기</span>
+          </Button>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 flex min-h-0">
+          {/* Left side - Form */}
+          <div className="flex-1 flex items-center justify-center p-8 pt-20 min-h-0">
+            <div className="w-full max-w-lg">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary to-violet-500 rounded-2xl mb-4 shadow-lg">
+                  <Github className="w-8 h-8 text-white" />
+                </div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                  GitHub 계정으로 가입하기
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400">
+                  이메일과 닉네임을 입력하여 회원가입을 완료하세요
+                </p>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>회원가입 완료</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Form {...githubSignupForm}>
+                    <form onSubmit={githubSignupForm.handleSubmit(onGithubSignup)} className="space-y-4">
+                      <FormField
+                        control={githubSignupForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>이메일</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="email"
+                                placeholder="이메일을 입력하세요"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={githubSignupForm.control}
+                        name="nickname"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>닉네임</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="닉네임을 입력하세요"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={githubSignupMutation.isPending}
+                      >
+                        {githubSignupMutation.isPending ? '가입 중...' : '회원가입 완료'}
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

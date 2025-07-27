@@ -36,7 +36,7 @@ export interface IStorage {
   getUserByProviderAndId(provider: string, providerId: string): Promise<User | undefined>;
   createUser(user: UpsertUser): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
-  updateUserProfile(id: string, data: { nickname?: string; profileImageUrl?: string }): Promise<User | undefined>;
+  updateUserProfile(id: string, data: { nickname?: string; profileImageUrl?: string; email?: string }): Promise<User | undefined>;
   linkSocialAccount(userId: string, provider: string, providerId: string, profileImageUrl?: string): Promise<User>;
   
   // Category operations
@@ -162,7 +162,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUserProfile(id: string, data: { nickname?: string; profileImageUrl?: string }): Promise<User | undefined> {
+  async updateUserProfile(id: string, data: { nickname?: string; profileImageUrl?: string; email?: string }): Promise<User | undefined> {
     const [user] = await db
       .update(users)
       .set({ 

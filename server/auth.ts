@@ -120,7 +120,7 @@ export function setupAuth(app: Express) {
             }
           }
 
-          // 새 사용자 생성
+          // 새 사용자 생성 - 임시로 저장하고 회원가입 완료 필요
           const newUser = await storage.createUser({
             id: `github_${githubId}_${Date.now()}`,
             email: email || null,
@@ -246,18 +246,73 @@ export function setupAuth(app: Express) {
 
   app.get("/api/auth/github/callback", 
     passport.authenticate("github", { failureRedirect: "/auth?error=github_failed" }),
-    (req, res) => {
+    async (req, res) => {
       // GitHub 로그인 성공
       const user = req.user as SelectUser;
-      if (!user.hasSetNickname) {
-        // 닉네임 설정이 필요한 경우
-        res.redirect("/nickname");
+      
+      // 신규 사용자인지 확인 (방금 생성되었는지)
+      const isNewUser = user.id.includes(`github_${user.providerId}`) && !user.hasSetNickname;
+      
+      if (isNewUser) {
+        // GitHub 신규 가입인 경우
+        res.redirect("/auth?github_signup=true");
       } else {
-        // 홈으로 리다이렉트
+        // 기존 사용자 홈으로 리다이렉트
         res.redirect("/");
       }
     }
   );
+
+  // GitHub 회원가입 완료 엔드포인트
+  app.post("/api/auth/github/complete-signup", isAuthenticated, async (req, res) => {
+    try {
+      const signupSchema = z.object({
+        email: z.string().email("올바른 이메일 주소를 입력해주세요"),
+        nickname: z.string().min(2, "닉네임은 최소 2자 이상이어야 합니다"),
+      });
+
+      const { email, nickname } = signupSchema.parse(req.body);
+      const user = req.user as SelectUser;
+
+      // 닉네임 중복 확인
+      const existingNickname = await storage.getUserByNickname(nickname);
+      if (existingNickname) {
+        return res.status(400).json({ message: "이미 사용 중인 닉네임입니다" });
+      }
+
+      // 이메일 중복 확인 (다른 사용자)
+      if (email !== user.email) {
+        const existingEmail = await storage.getUserByEmail(email);
+        if (existingEmail && existingEmail.id !== user.id) {
+          return res.status(400).json({ message: "이미 사용 중인 이메일입니다" });
+        }
+      }
+
+      // 닉네임 욕설 필터링
+      const isProfane = await storage.isProfane(nickname);
+      if (isProfane) {
+        return res.status(400).json({ message: "부적절한 닉네임입니다. 다른 닉네임을 사용해주세요" });
+      }
+
+      // 사용자 정보 업데이트
+      const updatedUser = await storage.updateUserProfile(user.id, {
+        nickname,
+        ...(email !== user.email && { email }),
+      });
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "사용자를 찾을 수 없습니다" });
+      }
+
+      res.json(updatedUser);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      console.error("GitHub signup completion error:", error);
+      res.status(500).json({ message: "회원가입 완료 중 오류가 발생했습니다" });
+    }
+  });
 
   // Login page - redirect to frontend auth page
   app.get("/api/login", (req, res) => {
