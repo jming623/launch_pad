@@ -42,8 +42,8 @@ export default function Home() {
             </p>
           </div>
           
-          {/* Quick Stats - Hidden on mobile */}
-          <div className="hidden lg:grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
             <div className="text-center p-4 bg-white/50 dark:bg-slate-800/50 rounded-lg backdrop-blur-sm">
               <div className="text-xl md:text-2xl font-bold text-primary">
                 {(stats as any)?.totalProjects?.toLocaleString() || 0}
