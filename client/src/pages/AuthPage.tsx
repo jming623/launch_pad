@@ -49,12 +49,12 @@ export default function AuthPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const isGithubSignup = urlParams.get('github_signup') === 'true';
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (but not for GitHub signup)
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !isGithubSignup) {
       setLocation('/');
     }
-  }, [isAuthenticated, setLocation]);
+  }, [isAuthenticated, isGithubSignup, setLocation]);
 
   const loginForm = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
