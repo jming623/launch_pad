@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { ProjectCard } from '@/components/ProjectCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LoadMoreButton } from '@/components/LoadMoreButton';
-import { Plus } from 'lucide-react';
-import { Link } from 'wouter';
+import { Plus, LogIn } from 'lucide-react';
+import { Link, useLocation } from 'wouter';
 import type { ProjectWithDetails } from '@shared/schema';
 
 interface ProjectListProps {
@@ -45,6 +45,7 @@ export function ProjectList({
   emptyStateConfig = DEFAULT_EMPTY_STATE,
   adFrequency = 3
 }: ProjectListProps) {
+  const [, setLocation] = useLocation();
   // Loading skeleton
   if (isLoading) {
     return (
@@ -85,23 +86,35 @@ export function ProjectList({
               : emptyStateConfig.description
             }
           </p>
-          {emptyStateConfig.showCreateButton && isAuthenticated && (
+          {emptyStateConfig.showCreateButton && (
             <div>
-              {emptyStateConfig.createButtonAction ? (
-                <Button 
-                  className="bg-gradient-to-r from-primary to-violet-500 hover:from-primary/90 hover:to-violet-500/90"
-                  onClick={emptyStateConfig.createButtonAction}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  {emptyStateConfig.createButtonText}
-                </Button>
-              ) : (
-                <Link href="/create">
-                  <Button className="bg-gradient-to-r from-primary to-violet-500 hover:from-primary/90 hover:to-violet-500/90">
+              {isAuthenticated ? (
+                // Show create button for authenticated users
+                emptyStateConfig.createButtonAction ? (
+                  <Button 
+                    className="bg-gradient-to-r from-primary to-violet-500 hover:from-primary/90 hover:to-violet-500/90"
+                    onClick={emptyStateConfig.createButtonAction}
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     {emptyStateConfig.createButtonText}
                   </Button>
-                </Link>
+                ) : (
+                  <Link href="/create">
+                    <Button className="bg-gradient-to-r from-primary to-violet-500 hover:from-primary/90 hover:to-violet-500/90">
+                      <Plus className="w-4 h-4 mr-2" />
+                      {emptyStateConfig.createButtonText}
+                    </Button>
+                  </Link>
+                )
+              ) : (
+                // Show login button for non-authenticated users
+                <Button 
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                  onClick={() => setLocation('/auth')}
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  로그인하고 프로젝트 등록하기
+                </Button>
               )}
             </div>
           )}
