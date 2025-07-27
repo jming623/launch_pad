@@ -76,10 +76,16 @@ export default function ProjectDetail() {
           title: "로그인 필요",
           description: "좋아요를 누르려면 로그인이 필요합니다.",
           variant: "destructive",
+          action: (
+            <Button 
+              size="sm" 
+              onClick={() => window.location.href = "/api/login"}
+              className="bg-white text-red-600 hover:bg-red-50"
+            >
+              로그인 하러가기
+            </Button>
+          ),
         });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
         return;
       }
       toast({
@@ -111,10 +117,16 @@ export default function ProjectDetail() {
           title: "로그인 필요",
           description: "댓글을 작성하려면 로그인이 필요합니다.",
           variant: "destructive",
+          action: (
+            <Button 
+              size="sm" 
+              onClick={() => window.location.href = "/api/login"}
+              className="bg-white text-red-600 hover:bg-red-50"
+            >
+              로그인 하러가기
+            </Button>
+          ),
         });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
         return;
       }
       toast({
