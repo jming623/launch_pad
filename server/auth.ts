@@ -250,13 +250,19 @@ export function setupAuth(app: Express) {
       // GitHub 로그인 성공
       const user = req.user as SelectUser;
       
-      // 신규 사용자인지 확인 (방금 생성되었는지)
-      const isNewUser = user.id.includes(`github_${user.providerId}`) && !user.hasSetNickname;
+      console.log("GitHub callback - user:", {
+        id: user.id,
+        hasSetNickname: user.hasSetNickname,
+        email: user.email,
+        nickname: user.nickname
+      });
       
-      if (isNewUser) {
-        // GitHub 신규 가입인 경우
+      // 닉네임 설정이 안된 경우 (신규 가입 또는 기존 사용자 중 닉네임 미설정)
+      if (!user.hasSetNickname) {
+        console.log("Redirecting to GitHub signup page");
         res.redirect("/auth?github_signup=true");
       } else {
+        console.log("Redirecting to home page");
         // 기존 사용자 홈으로 리다이렉트
         res.redirect("/");
       }
