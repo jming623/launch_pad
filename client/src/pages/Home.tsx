@@ -5,8 +5,11 @@ import { RankingTabs } from '@/components/RankingTabs';
 import { Sidebar } from '@/components/Sidebar';
 import { ProjectList } from '@/components/ProjectList';
 import { useProjectPagination } from '@/hooks/useProjectPagination';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Home() {
+  const { isAuthenticated } = useAuth();
+  
   const {
     activeTab,
     selectedCategory,
@@ -101,6 +104,7 @@ export default function Home() {
                 showNoMoreMessage={showNoMoreMessage}
                 isLoadingMore={isLoadingMore}
                 onLoadMore={handleLoadMore}
+                isAuthenticated={isAuthenticated}
                 emptyStateConfig={{
                   title: "프로젝트가 없습니다",
                   description: "아직 등록된 프로젝트가 없습니다.",
