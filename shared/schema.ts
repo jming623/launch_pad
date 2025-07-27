@@ -28,7 +28,7 @@ export const sessions = pgTable(
 // User storage table
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
-  email: varchar("email").unique().notNull(),
+  email: varchar("email").unique(),
   firstName: varchar("first_name"), // Optional - for backward compatibility
   lastName: varchar("last_name"), // Optional - for backward compatibility
   password: varchar("password"), // For traditional email/password auth
